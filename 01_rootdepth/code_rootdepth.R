@@ -55,7 +55,7 @@ phen_dum <-
     year == 2019 & doy == 205 ~ 203,
     year == 2019 & doy == 213 ~ 212,
     year == 2019 & doy == 232 ~ 231,
-    year == 2020 & doy == 163 ~ 164,
+    year == 2020 & doy == 163 ~ 164, #--did phen day before roots
     TRUE ~ doy)) %>%
   select(-doy, -date) 
 
