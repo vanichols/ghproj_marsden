@@ -22,9 +22,7 @@ mrs_rootdepth %>%
   facet_grid(.~year) + 
   scale_y_reverse()
 
-ggsave("01_rootdepth/fig_rootdepth.png")
-
-#---need to do phenology
+#---add phenology
 
 phen_avg <- 
   mrs_phen %>% 
@@ -71,6 +69,19 @@ write_csv(rootphen, "01_rootdepth/td_rootdepth-phen.csv")
 
 
 
+library(ggrepel)
+
+rootphen %>% 
+  left_join(mrs_plotkey) %>% 
+  ggplot(aes(doy, rootdepth_cm, color = rot_trt)) + 
+  geom_point(size = 3, alpha = 0.5) + 
+  geom_label_repel(data = . %>% select(year, doy, rot_trt, pl_stage) %>% distinct(),
+            aes(y = 0, label = pl_stage)) +
+  facet_grid(.~year) + 
+  scale_y_reverse()
+
+
+ggsave("01_rootdepth/fig_rootdepth.png")
 
 
 # ##===================================================================##
