@@ -10,7 +10,10 @@ library(readxl)
 library(patchwork)
 library(maRsden)
 library(ggforce)
+library(ggridges)
 
+
+# donuts ------------------------------------------------------------------
 
 ylds <- 
   mrs_cornylds %>% 
@@ -64,36 +67,37 @@ mrs_cornylds %>%
 
 
 
-# If you got values for a pie chart, use stat_pie
-states <- c(
-  'eaten', "eaten but said you didn\'t", 'cat took it', 'for tonight',
-  'will decompose slowly')
 
-pie <- data.frame(
-  state = factor(rep(states, 2), levels = states),
-  type = rep(c('Pie', 'Donut'), each = 5),
-  r0 = rep(c(0, 0.8), each = 5),
-  focus = rep(c(0.2, 0, 0, 0, 0), 2),
-  amount = c(4, 3, 1, 1.5, 6, 6, 1, 2, 3, 2),
-  stringsAsFactors = FALSE)
+# nate's gini  ------------------------------------------------------------
 
-pie %>% 
-  filter(type == "Pie")
+gini <-
+  mrs_cornylds %>% 
+  filter(!is.na(plot)) %>% 
+  group_by(year, harv_crop) %>% 
+  summarise(yld_Mgha = mean(yld_Mgha)) %>% 
+  group_by(harv_crop) %>% 
+  arrange(yld_Mgha) %>% 
+  group_by(harv_crop) %>% 
+  mutate(tot_Mgha = sum(yld_Mgha),
+         pct_tot = yld_Mgha/tot_Mgha,
+         cum_pct = cumsum(pct_tot),
+         n = n(),
+         n = cumsum(1/n)) %>% 
+  select(harv_crop, cum_pct, n) %>% 
+  ungroup()
 
-# Look at the cakes
-ggplot() + 
-  geom_arc_bar(aes(
-    x0 = 0, 
-    y0 = 0, 
-    r0 = r0, 
-    r = 1, 
-    amount = amount,
-    fill = state, explode = focus),data = pie, stat = 'pie') +
-  facet_wrap(~type, ncol = 1) +
-  coord_fixed() +
-  theme_no_axes() +
-  scale_fill_brewer('', type = 'qual')
-    
-    
-    ggplot() +
-      geom_circle(aes(x0 = x0, y0 = y0, r = r, fill = r), data = circles)
+
+gini %>% 
+  add_row(harv_crop = c("C2", "C3", "C4"),
+          n = c(0,0,0), 
+          cum_pct = c(0,0,0)) %>% 
+  filter(harv_crop != "C3") %>% 
+  ggplot(aes(n, cum_pct)) + 
+  #geom_point(aes(color = harv_crop), size = 4) +
+  geom_density_line(stat ="identity", alpha=0.6, aes(fill = harv_crop)) +
+  geom_abline() + 
+  facet_grid(.~harv_crop) +
+  theme_minimal() + 
+  coord_fixed()
+
+
