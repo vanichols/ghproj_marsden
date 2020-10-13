@@ -150,8 +150,11 @@ rootelev %>% write_csv("01_rootdepth/td_rootdepth-elev.csv")
 rootelevwea <- 
   rootelev %>% 
   left_join(rootwea) %>% 
-  select(date, year, doy, cum_gdd, plot_id, mean_elev_m, subrep_id, rootdepth_cm) %>% 
-  distinct()
-
+  left_join(mrs_plotkey) %>% 
+  select(date, year, doy, cum_gdd, 
+         rot_trt, block,
+         plot_id, mean_elev_m, subrep_id, 
+         rootdepth_cm) 
+  
 rootelevwea %>% write_csv("01_rootdepth/td_rootdepth-elev-wea.csv")
 rootelevwea %>% write_csv("../../_notmy_repos/stat_rethink/gina-proj/td_rootdepth-elev-wea.csv")
