@@ -1,11 +1,11 @@
 # try to do gam on penetration data
 # started 10/16
-# updated:
+# updated: 10/19 (make knots more reasonable)
 
 library(rethinking)
 library(maRsden)
-library(tidyverse)
-
+library(dplyr)
+library(tidyr)
 dat <- 
   mrs_penetrom %>% 
   filter(year == 2018) %>% 
@@ -188,6 +188,7 @@ shade(mu_PI, dat$year, col = col.alpha("black", 0.5))
 #--I guess I could center and scale the resistances?
 # Scaling didn't work either. 
 # maybe I need more data, shouldn't average by plot. Need to fix that in the package. 
+
 md <- 
   mrs_penetrom %>% 
   left_join(mrs_plotkey) %>% 
@@ -197,43 +198,55 @@ md <-
 
 plot(md$depth_cm, md$resis_sc, col = col.alpha(rangi2, 0.3), pch  =16)
 
+ggplot() + 
+  geom_point(data = md, aes(x = depth_cm, y = resis_Mpa)) 
 
 #--create knot list, dividing into 6 depths seems reasonable
 hist(md$depth_cm)
-num_knots <- 6
+num_knots <- 4
 knot_list <- quantile(md$depth_cm, probs = seq(0, 1, length.out = num_knots))
 knot_list
 length(knot_list)
 
 #--build basis functions, 0 intercept if not scaled, T if it is scaled
 
-B3m <- bs(x = md$depth_cm,
+B3pen <- bs(x = md$depth_cm,
           knots = knot_list[-c(1, num_knots)], #--remove first and last knots
           degree = 3, #defines number of functions to combine within each interval between knots, 1 means 2 funcs
-          intercept = T) 
+          intercept = F) 
 
+B3pen %>% 
+  as_tibble() %>% 
+  janitor::clean_names() %>% 
+  mutate(depth_cm = md$depth_cm) %>%
+  select(depth_cm, everything()) %>% 
+  pivot_longer(x1:x5) %>% 
+  ggplot(aes(depth_cm, value, group = name, color = name)) + 
+  geom_line() + 
+  guides(color = F) 
 
 #--now fit a quap
 mB3m <- 
   quap(
     alist(
       D ~ dnorm( mu, sigma),
-      mu <- a + B %*% w,
-      a ~ dnorm(-2.5, 1),
+      mu <- B %*% w, #--add a if intercept (scaled)
+      #a ~ dnorm(-2.5, 1),
       w ~ dnorm(0, 10),
       sigma ~ dexp(1)
-    ), data = list( D = md$resis_sc, B = B3m ), 
-    start = list(w = rep(0, ncol(B3m))))
+    ), data = list( D = md$resis_Mpa, B = B3pen ), 
+    start = list(w = rep(0, ncol(B3pen))))
 
 post <- extract.samples(mB3m) #--I still struggle with what this actually is
 w <- apply(post$w, 2, mean) #--2 means column-wise. Getting a mean value for each w
 
-plot( NULL, xlim = range(md$depth_cm), ylim = c(-6, 6), 
+plot( NULL, xlim = range(md$depth_cm), ylim = c(0, 1), 
       xlab = "depth_cm", ylab = "basis * wgt")
-for ( i in 1:ncol(B3m)) lines (md$depth_cm, w[i]*B3m[,i] )
+for ( i in 1:ncol(B3pen)) lines (md$depth_cm, w[i]*B3pen[,i] )
 
-mu <- link(mB3m) #--again, how is this different from extract.samples??
-mu_PI <- apply(mu, 2, PI, 0.97)
-plot(md$depth_cm, md$resis_sc, col = col.alpha(rangi2, 0.3), pch  =16)
-shade(mu_PI, md$depth_cm, col = col.alpha("black", 0.5))
+mu_pen <- link(mB3m) #--again, how is this different from extract.samples??
+mu_pen_PI <- apply(mu_pen, 2, PI, 0.97)
+plot(md$depth_cm, md$resis_Mpa, col = col.alpha(rangi2, 0.3), pch  =16)
+shade(mu_pen_PI, md$depth_cm, col = col.alpha("black", 0.5))
+plot(mu_pen, md$depth_cm)
 
