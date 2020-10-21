@@ -16,12 +16,34 @@ library(GinaBooty)
 mrs_plotkey
 mrs_elevation
 
-dat <- 
+mrs_elevation %>% 
+  ggplot(aes(mean_elev_m, median)) + 
+  geom_point()
+
+
+mrs_plotcoords %>% 
+  left_join(mrs_elevation %>% 
+              select(plot, mean_elev_m, median)) %>% 
+  ggplot() + 
+  geom_rect(aes(xmin = x, xmax = xend, ymin = y, ymax = yend, fill = mean_elev_m), 
+            color = "black")
+
+mrs_plotcoords %>% 
+  left_join(mrs_elevation %>% 
+              select(plot, mean_elev_m, median)) %>%
+  mutate(year = 2018) %>% 
+  left_join(mrs_plotkey)
+  ggplot() + 
+  geom_rect(aes(xmin = x, xmax = xend, ymin = y, ymax = yend, fill = mean_elev_m), 
+            color = "black")
+
+
+elev <- 
   mrs_plotkey %>% 
   left_join(mrs_elevation %>% 
               select(plot, mean_elev_m, median))
 
-datm <- 
+elev_m <- 
   dat %>% 
   filter(harv_crop %in% c("C2", "C3", "C4")) %>% 
   group_by(year, rot_trt, harv_crop) %>% 
@@ -29,7 +51,7 @@ datm <-
   ungroup()
   
 # viz ---------------------------------------------------------------------
-datm %>% 
+elev_m %>% 
   ggplot(aes(year, mean_elev, color = rot_trt)) + 
   geom_point() + 
   geom_line()
@@ -37,8 +59,8 @@ datm %>%
 
 # difference in elev ------------------------------------------------------
 
-datdev <- 
-  datm %>%
+elev_dev <- 
+  elev_m %>%
   select(-rot_trt) %>% 
   pivot_wider(names_from = harv_crop, values_from = mean_elev) %>% 
   mutate(devC3 = C3 - C2,
@@ -47,18 +69,18 @@ datdev <-
   pivot_longer(devC3:devC4) %>% 
   rename(elev_dev = value)
 
-datdev %>% 
+elev_dev %>% 
   ggplot(aes(year, elev_dev, fill = name)) + 
   geom_col(position = position_dodge2())
 
-datm %>% 
+elev_m %>% 
   ggplot(aes(rot_trt, mean_elev, color = rot_trt)) +
   geom_point(size = 4) + 
   facet_wrap(~year)
 
 # compare elev diffs to yield diffs ---------------------------------------
 
-ylddev <- 
+yld_dev <- 
   mrs_cornylds %>% 
   left_join(mrs_plotkey) %>%
   group_by(year, rot_trt) %>% 
@@ -70,7 +92,7 @@ ylddev <-
   pivot_longer(devC3:devC4) %>% 
   rename(yield_dev = value)
 
-ylddev %>% 
+yld_dev %>% 
   left_join(datdev) %>% 
   ggplot(aes(elev_dev, yield_dev, color = name)) + 
   geom_point(size = 3) + 
@@ -87,4 +109,26 @@ mrs_cornylds %>%
   facet_grid(.~year)
   
 #--I need to look at what the water table data said
+
   
+
+# stats approach ----------------------------------------------------------
+
+dat <- 
+  elev_m  %>% 
+  left_join(  
+    mrs_cornylds %>% 
+                left_join(mrs_plotkey)
+  ) %>% 
+  mutate(yearF = as.factor(year))
+
+
+library(lme4)
+library(lmerTest)
+m1 <- lmer(yield_Mgha ~ rot_trt + (1|yearF) + (1|year:block), data = dat)
+summary(m1)
+anova(m1)
+
+m2 <- lmer(yield_Mgha ~ rot_trt + mean_elev + (1|yearF), data = dat)
+summary(m2)
+anova(m2)
