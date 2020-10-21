@@ -1,7 +1,7 @@
 # Gina
 # does average elevation of rot treatments vary by year?
 # 10/20/2020
-# notes: 
+# notes: need to add more years to plotkey in maRsden package. 
 
 
 rm(list=ls())
@@ -16,51 +16,59 @@ library(GinaBooty)
 mrs_plotkey
 mrs_elevation
 
+#--is mean or median elevation best?
+# they are the same
 mrs_elevation %>% 
   ggplot(aes(mean_elev_m, median)) + 
   geom_point()
 
 
-mrs_plotcoords %>% 
-  left_join(mrs_elevation %>% 
-              select(plot, mean_elev_m, median)) %>% 
-  ggplot() + 
-  geom_rect(aes(xmin = x, xmax = xend, ymin = y, ymax = yend, fill = mean_elev_m), 
-            color = "black")
-
-mrs_plotcoords %>% 
+#--look at location of plots in a given year
+plot_map18 <- 
+  mrs_plotcoords %>% 
   left_join(mrs_elevation %>% 
               select(plot, mean_elev_m, median)) %>%
-  mutate(year = 2018) %>% 
+  mutate(year = 2018,
+         plot_id = paste(year, plot, sep = "_")) %>% 
   left_join(mrs_plotkey)
-  ggplot() + 
-  geom_rect(aes(xmin = x, xmax = xend, ymin = y, ymax = yend, fill = mean_elev_m), 
-            color = "black")
 
 
+ggplot() + 
+  geom_rect(data = plot_map18, 
+            aes(xmin = x, xmax = xend, ymin = y, ymax = yend, fill = mean_elev_m), 
+            #fill = "gray", 
+            color = "black") + 
+  geom_rect(data = plot_map18 %>% filter(harv_crop %in% c("C2", "C4")),
+            aes(xmin = x, xmax = xend, ymin = y, ymax = yend, color = harv_crop), 
+            fill = NA, size = 4) + 
+  scale_fill_viridis_c()
+
+
+#--get elevation for each plot in each year
 elev <- 
   mrs_plotkey %>% 
   left_join(mrs_elevation %>% 
               select(plot, mean_elev_m, median))
 
-elev_m <- 
-  dat %>% 
+#--get mean elevation by treatment
+elev_trt <- 
+  elev %>% 
   filter(harv_crop %in% c("C2", "C3", "C4")) %>% 
   group_by(year, rot_trt, harv_crop) %>% 
   summarise(mean_elev = mean(mean_elev_m)) %>% 
   ungroup()
   
 # viz ---------------------------------------------------------------------
-elev_m %>% 
-  ggplot(aes(year, mean_elev, color = rot_trt)) + 
-  geom_point() + 
-  geom_line()
 
+elev_trt %>% 
+  ggplot(aes(rot_trt, mean_elev, color = rot_trt)) +
+  geom_point(size = 4) + 
+  facet_wrap(~year)
 
 # difference in elev ------------------------------------------------------
 
 elev_dev <- 
-  elev_m %>%
+  elev_trt %>%
   select(-rot_trt) %>% 
   pivot_wider(names_from = harv_crop, values_from = mean_elev) %>% 
   mutate(devC3 = C3 - C2,
@@ -71,12 +79,9 @@ elev_dev <-
 
 elev_dev %>% 
   ggplot(aes(year, elev_dev, fill = name)) + 
-  geom_col(position = position_dodge2())
+  geom_col(position = position_dodge2()) + 
+  ggtitle("Deviation from 2yr elevation")
 
-elev_m %>% 
-  ggplot(aes(rot_trt, mean_elev, color = rot_trt)) +
-  geom_point(size = 4) + 
-  facet_wrap(~year)
 
 # compare elev diffs to yield diffs ---------------------------------------
 
@@ -92,14 +97,35 @@ yld_dev <-
   pivot_longer(devC3:devC4) %>% 
   rename(yield_dev = value)
 
+#--with more years this relationship might be more robust
 yld_dev %>% 
-  left_join(datdev) %>% 
+  left_join(elev_dev) %>% 
   ggplot(aes(elev_dev, yield_dev, color = name)) + 
   geom_point(size = 3) + 
   geom_label(aes(label = year)) +
   geom_hline(yintercept = 0) + 
   geom_vline(xintercept = 0) + 
   ggtitle("Biggest corn yield bumps when average plot elevations are lower than control")
+
+
+mrs_cornylds %>% 
+  left_join(mrs_plotkey) %>% 
+  left_join(elev_m) %>% 
+  ggplot(aes(mean_elev, yield_Mgha, color = rot_trt)) + 
+  geom_point() + 
+  geom_smooth(method = "lm") + 
+  ggtitle("Elevation not related to rot effect")
+
+mrs_cornylds %>% 
+  left_join(mrs_plotkey) %>% 
+  left_join(elev_m) %>% 
+  ggplot(aes(mean_elev, yield_Mgha)) + 
+  geom_point(aes(color = rot_trt)) + 
+  geom_smooth(method = "lm") + 
+  facet_grid(.~year) +
+  ggtitle("Elevation not related to yields")
+#--were the 4yr plots at a lower eleveation in 2018?!?
+
 
 #--was the biggest yield bump for C4 in 2018?
 mrs_cornylds %>% 
