@@ -1,26 +1,21 @@
 # try to do gam on penetration data
 # started 10/16
 # updated: 10/19 (make knots more reasonable)
+#           10/21 made mrs_penetrom maintain subreps (not averaged by plot any more)
+
+#install.packages(c("coda","mvtnorm","devtools","loo","dagitty"))
+#devtools::install_github("rmcelreath/rethinking")
 
 library(rethinking)
+#remotes::install_github("vanichols/maRsden") #--can get data directly
 library(maRsden)
 library(dplyr)
 library(tidyr)
-dat <- 
-  mrs_penetrom %>% 
-  filter(year == 2018) %>% 
-  filter(doy == 130) %>% 
-  left_join(mrs_plotkey) %>% 
-  ungroup() %>% 
-  select(block, plot_id, rot_trt, depth_cm, resis_kpa)
+library(ggplot2)
+library(splines)
 
-#  resis ~ s(depth) + rot_trt (?)
 
-# work through this...
-# https://m-clark.github.io/generalized-additive-models/application.html
-
-# knots (divides the data into sections)
-# basis (the function of x to be used, ex polynomial spline basis)
+# rethinking book example -------------------------------------------------
 
 data("cherry_blossoms")
 datraw <- cherry_blossoms
@@ -32,14 +27,14 @@ summary(datraw)
 summary(dat)
 
 
-# breate knot list --------------------------------------------------------
-
+# create knot list --------------------------------------------------------
 
 num_knots <- 15
 #--could split them evenly? not sure how to do that
 #split(dat, ceiling(seq_along(dat)/20))
 # cut_interval() makes n groups with equal range, 
 # cut_number() makes n groups with (approximately) equal numbers of observations
+
 split(dat$year, cut_number(dat$year, num_knots)) 
 
 cut_interval(rexp(100, 5), 10)
@@ -53,7 +48,6 @@ knot_list <- quantile(dat$year, probs = seq(0, 1, length.out = num_knots))
 knot_list
 length(knot_list)
 
-library(splines)
 B1 <- bs(x = dat$year,
          knots = knot_list[-c(1, num_knots)], #--no idea why you have to do this
          degree = 1, #four functions combine within each interval between knots
@@ -181,36 +175,31 @@ plot(dat$year, dat$doy, col = col.alpha(rangi2, 0.3), pch  =16)
 shade(mu_PI, dat$year, col = col.alpha("black", 0.5))
 
 
-# try with penetration data from one treatment and one year ---------------
 
-#--NOT WORKING. I have bad priors, I think
-# w should not be normally distributed. It always needs to be positive. 
-#--I guess I could center and scale the resistances?
-# Scaling didn't work either. 
-# maybe I need more data, shouldn't average by plot. Need to fix that in the package. 
+# try with penetration data from one treatment and one year and one sampling---------------
 
-md <- 
+myd <- 
   mrs_penetrom %>% 
   left_join(mrs_plotkey) %>% 
   filter(year == "2018", rot_trt == "2y", doy == 130) %>% 
-  mutate(resis_Mpa = resis_kpa/1000,
-         resis_sc = scale(resis_kpa))
+  mutate(resis_Mpa = resis_kpa/1000) %>% #--easier to make priors for
+  select(year, doy, block, rot_trt, plot_id, rep_id, depth_cm, resis_Mpa) %>% 
+  arrange(depth_cm, block, plot_id, rep_id)
 
-plot(md$depth_cm, md$resis_sc, col = col.alpha(rangi2, 0.3), pch  =16)
+plot(myd$depth_cm, myd$resis_Mpa, col = col.alpha(rangi2, 0.3), pch  =16)
 
 ggplot() + 
-  geom_point(data = md, aes(x = depth_cm, y = resis_Mpa)) 
+  geom_point(data = myd, aes(x = depth_cm, y = resis_Mpa)) 
 
-#--create knot list, dividing into 6 depths seems reasonable
-hist(md$depth_cm)
-num_knots <- 4
-knot_list <- quantile(md$depth_cm, probs = seq(0, 1, length.out = num_knots))
+#--create knot list, dividing into 4-6 depths seems reasonable
+hist(myd$depth_cm)
+num_knots <- 6
+knot_list <- quantile(myd$depth_cm, probs = seq(0, 1, length.out = num_knots))
 knot_list
 length(knot_list)
 
-#--build basis functions, 0 intercept if not scaled, T if it is scaled
-
-B3pen <- bs(x = md$depth_cm,
+#--build basis functions, 0 intercept
+B3pen <- bs(x = myd$depth_cm,
           knots = knot_list[-c(1, num_knots)], #--remove first and last knots
           degree = 3, #defines number of functions to combine within each interval between knots, 1 means 2 funcs
           intercept = F) 
@@ -218,7 +207,7 @@ B3pen <- bs(x = md$depth_cm,
 B3pen %>% 
   as_tibble() %>% 
   janitor::clean_names() %>% 
-  mutate(depth_cm = md$depth_cm) %>%
+  mutate(depth_cm = myd$depth_cm) %>%
   select(depth_cm, everything()) %>% 
   pivot_longer(x1:x5) %>% 
   ggplot(aes(depth_cm, value, group = name, color = name)) + 
@@ -234,19 +223,26 @@ mB3m <-
       #a ~ dnorm(-2.5, 1),
       w ~ dnorm(0, 10),
       sigma ~ dexp(1)
-    ), data = list( D = md$resis_Mpa, B = B3pen ), 
+    ), data = list( D = myd$resis_Mpa, B = B3pen ), 
     start = list(w = rep(0, ncol(B3pen))))
 
-post <- extract.samples(mB3m) #--I still struggle with what this actually is
+
+post <- extract.samples(mB3m) #--I still struggle with what this actually is doing
 w <- apply(post$w, 2, mean) #--2 means column-wise. Getting a mean value for each w
 
-plot( NULL, xlim = range(md$depth_cm), ylim = c(0, 1), 
+plot( NULL, xlim = range(myd$depth_cm), ylim = c(0, 1), 
       xlab = "depth_cm", ylab = "basis * wgt")
-for ( i in 1:ncol(B3pen)) lines (md$depth_cm, w[i]*B3pen[,i] )
+for ( i in 1:ncol(B3pen)) lines (myd$depth_cm, w[i]*B3pen[,i] )
+
+# w[5]*B3pen[,5]
+# myd$depth_cm
+
+#for ( i in 1:ncol(B3pen)) lines (myd$depth_cm, w[i]*B3pen[,i] )
+
+#--ggplotify it?. That weird line is just a problem from the lines
 
 mu_pen <- link(mB3m) #--again, how is this different from extract.samples??
 mu_pen_PI <- apply(mu_pen, 2, PI, 0.97)
-plot(md$depth_cm, md$resis_Mpa, col = col.alpha(rangi2, 0.3), pch  =16)
-shade(mu_pen_PI, md$depth_cm, col = col.alpha("black", 0.5))
-plot(mu_pen, md$depth_cm)
+plot(myd$depth_cm, myd$resis_Mpa, col = col.alpha(rangi2, 0.3), pch  =16)
+shade(mu_pen_PI, myd$depth_cm, col = col.alpha("black", 0.5))
 
