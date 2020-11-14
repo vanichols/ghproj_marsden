@@ -5,7 +5,7 @@ library(maRsden)
 library(dplyr)
 library(tidyr)
 library(ggplot2)
-library(lemon) # chunk option `render = lemon_print` makes tables prettier
+#library(lemon) # chunk option `render = lemon_print` makes tables prettier
 
 myd <- 
   mrs_penetrom %>% 
@@ -142,7 +142,7 @@ mgcv::gam.check(mod2)
 myd$resid <- mod$residuals
 
 ggplot(data = myd) + 
-  geom_line(aes(x = depth_cm, y = resid, group = rep_id, color = year_doy)) +
+  geom_point(aes(x = depth_cm, y = resid, group = rep_id, color = year_doy)) +
   facet_wrap( ~ trt_block_yr, ncol = length(unique(myd$year_doy)))
 
 
@@ -217,9 +217,9 @@ newdata <- expand.grid(depth_cm = unique(myd$depth_cm),
 newdata2 <- expand.grid(depth_cm = seq(0, 45, by = 1),
                        trt_block_yr = levels(myd$trt_block_yr))
 
-#Create one for prediction that contains the depth values and levels of `trt_yr_doy` (not working).
+#Create one for prediction that contains the depth values and levels of `trt_yr_doy` (not working in fxn).
 
-newdata3 <- expand.grid(depth_cm = unique(myd$depth_cm),
+newdata3 <- expand.grid(depth_cm = seq(0, 45, by = 1),
                         trt_yr_doy = levels(myd$trt_yr_doy))
 head(newdata3)
 
@@ -246,8 +246,8 @@ X[, ! (c1 | c2)] <- 0
 ## zero out the parametric cols
 X[, !grepl('^s\\(', colnames(xp))] <- 0
 dif <- X %*% coef(mod)
-se <- sqrt(rowSums((X %*% vcov(mod, unconditional = unconditional)) * X)) #--? doesn't work?
-crit <- qt(alpha/2, df.residual(mod), lower.tail = FALSE)
+se <- sqrt(rowSums((X %*% vcov(mod, unconditional = FALSE)) * X)) #--? doesn't work?
+crit <- qt(0.05/2, df.residual(mod), lower.tail = FALSE)
 upr <- dif + (crit * se)
 lwr <- dif - (crit * se)
 data.frame(pair = paste(f1, f2, sep = '-'),
@@ -258,7 +258,7 @@ data.frame(pair = paste(f1, f2, sep = '-'),
 
 
 
-
+# but this works. Ugh what am I missing. 
 out <- purrr::map_dfr(1:nrow(var_df), function(i) {
   d <- smooth_diff(mod, newdata, 
               f1 = var_df[i,1], f2 = var_df[i,2], 
@@ -282,6 +282,17 @@ out2 <- purrr::map_dfr(1:nrow(var_df), function(i) {
 comp2 <- cbind(depth_cm = seq(0, 45, by = 1), out2) # add depth values
 comp2$pair <- as.factor(comp2$pair) # make this a factor again for ggplot2
 head(comp2)
+
+#--try w/o block?
+out3 <- purrr::map_dfr(1:nrow(var_df3), function(i) {
+  d <- smooth_diff(mod, newdata2, 
+                   f1 = var_df3[i,1], f2 = var_df3[i,2], 
+                   var = "trt__yr")
+  d$pair <- as.character(d$pair) # prevent map_dfr from combining factors
+  return(d)
+})
+
+
 
 #First, remember that the model is predicting sqrt(resis_Mpa), so we should transform the predictions and confidence intervals back to their original scale.
 
