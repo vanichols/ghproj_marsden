@@ -73,15 +73,15 @@ mod_coefs %>%
 new_dat <- 
   mod_dat %>% 
   select(yearF, rot_trt) %>% 
-  expand_grid(., doy = seq(130, 300, 5))
+  expand_grid(., doy = seq(130, 300, 1))
 
 prd_dat <- 
   mod_dat %>% 
   group_by(yearF, rot_trt) %>% 
   nest() %>% 
   mutate(mfit = data %>% map(~nls(mass_gpl ~ SSlogis(doy, Asym, xmid, scal), data = .)),
-         doy = list(seq(130, 300, 5)),
-         mpreds = mfit %>% map(predict, newdata = data.frame(doy = seq(130, 300, 5)))) %>% 
+         doy = list(seq(130, 300, 1)),
+         mpreds = mfit %>% map(predict, newdata = data.frame(doy = seq(130, 300, 1)))) %>% 
   select(-data, -mfit) %>% 
   unnest(cols = c(doy, mpreds))
 
@@ -127,6 +127,39 @@ dat_deriv %>%
 
 ggsave("01_growth-analysis/fig_fe-growth-analysis.png")
 
+
+
+# rue ---------------------------------------------------------------------
+
+dat_deriv
+
+rue <- 
+  mrs_cornlai %>% 
+  left_join(prd_dat)  %>% 
+  mutate(
+    lai_m2pl = lai_cm2pl * (1/100^2),
+    rue = mpreds/(lai_m2pl)) 
+
+mrs_cornlai %>% 
+  left_join(mrs_plotkey) %>% 
+  ggplot(aes(doy, lai_cm2pl)) + 
+  geom_point(aes(color = rot_trt)) +
+  facet_grid(.~year)
+
+rue %>% 
+  select(year, doy, rot_trt, rue) %>% 
+  group_by(year, doy, rot_trt) %>% 
+  summarise(rue = mean(rue, na.rm = T)) %>% 
+  pivot_wider(names_from = rot_trt, values_from = rue) %>% 
+  janitor::clean_names() %>% 
+  mutate(rue_ratio = x4y/x2y) %>% 
+  filter(doy < 200) %>% 
+  ggplot(aes(doy, rue_ratio)) + 
+  geom_point() + 
+  geom_hline(yintercept = 1, linetype = "dashed") +
+  facet_grid(.~year) + 
+  labs(y = "Ratio of 4yr RUE to 2 yr RUE before flowering")
+  
 
 # mixed model fitting -----------------------------------------------------
 
