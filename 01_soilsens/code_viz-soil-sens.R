@@ -6,7 +6,7 @@ library(maRsden)
 library(janitor)
 library(ggthemes)
 library(cowplot)
-
+library(grafify)
 
 theme_set(theme_bw())
 
@@ -22,6 +22,7 @@ fig_wt <-
   ggplot(aes(date, value/10, group = plot_id)) + 
   geom_line(aes(color = plot_id), size = 3) + 
   guides(color = F) +
+  scale_color_grafify() +
   scale_y_reverse(limits = c(300, 0)) + 
   labs(y = "Depth to Water Table (cm)",
        x = NULL,
@@ -58,8 +59,9 @@ fig_plots <-
             color = "black") + 
   geom_rect(data = plot_map19 %>% filter(plot_id %in% c("2019_12", "2019_43")),
             aes(xmin = x, xmax = xend, ymin = y, ymax = yend, color = plot_id), 
-            fill = NA, size = 4) + 
+            fill = NA, size = 2) + 
   guides(color = F) +
+  scale_color_grafify() +
   scale_fill_viridis_c() + 
   theme_map() + 
   theme(legend.position = "right") + 

@@ -7,7 +7,6 @@ library(tidyverse)
 
 dat <- mrs_cornylds %>% left_join(mrs_plotkey) %>% mutate(yearF = as.factor(year))
 
-#--I think John Sawyer is lying. 
 dat %>% 
   group_by(year, rot_trt) %>% 
   summarise(yield_sd = sd(yield_Mgha)) %>% 

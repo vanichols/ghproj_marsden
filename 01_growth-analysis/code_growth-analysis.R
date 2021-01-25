@@ -2,16 +2,13 @@
 # started 1/15/2021
 # updated:
 
+#remotes::install_github("ashenoy-cmbi/grafify@*release", dependencies = T) 
 library(maRsden)
 library(tidyverse)
-
+library(grafify)
 
 #remotes::install_github("femiguez/nlraa")
 library(nlraa)
-library(nlme)
-library(emmeans)
-library(car) #--overwrites recode in dplyr
-library(minpack.lm)
 library(janitor)
 
 theme_set(theme_bw())
@@ -25,7 +22,8 @@ dat <-
 
 dat %>% 
   ggplot(aes(doy, mass_gpl)) + 
-  geom_point(aes(color = rot_trt)) + 
+  geom_point(aes(color = rot_trt),size = 3) + 
+  scale_color_grafify() +
   facet_grid(.~year)
 
 mod_dat <- 
@@ -36,7 +34,8 @@ mod_dat <-
 
 mod_dat %>%
   ggplot(aes(doy, mass_gpl, color = rot_trt)) + 
-  geom_point() + 
+  geom_point(size = 4) + 
+  scale_color_grafify() +
   facet_grid(.~yearF) + 
   labs(title = "observations")
 
@@ -101,8 +100,9 @@ prd_dat %>%
   geom_line(size = 2) + 
   geom_point(data = mod_dat,
              aes(doy, mass_gpl, color = rot_trt),
-             alpha = 0.5) +
+             alpha = 0.4, size = 4) +
   facet_grid(.~yearF) + 
+  scale_color_grafify() +
   labs(title = "logistic fit",
        y = "Biomass per plant (g)")
 
@@ -156,9 +156,9 @@ dat_deriv %>%
   mutate(rel_gr = abs_gr/mpreds) %>% 
   rename("mass_gpl" = mpreds) %>% 
   pivot_longer(abs_gr:rel_gr) %>% 
-  mutate(name = factor(name, levels = c("mass_gpl", "abs_gr", "rel_gr"))) %>% 
-  ggplot(aes(doy, value, color = rot_trt, group = name)) + 
-  stat_summary(fun = "mean", geom = "line", aes(color = rot_trt, group = rot_trt)) +
+  mutate(name = factor(name, levels = c("mass_gpl", "abs_gr", "rel_gr"))) %>%   ggplot(aes(doy, value, color = rot_trt, group = name)) + 
+  stat_summary(fun = "mean", geom = "line", aes(color = rot_trt, group = rot_trt), size = 2) +
+  scale_color_grafify() +
   facet_grid(name~yearF, scales = "free")
 
 ggsave("01_growth-analysis/fig_fe-growth-analysis.png")
@@ -180,6 +180,7 @@ mrs_cornlai %>%
   left_join(mrs_plotkey) %>% 
   ggplot(aes(doy, lai_cm2pl)) + 
   geom_point(aes(color = rot_trt)) +
+  scale_color_grafify() +
   facet_grid(.~year)
 
 rue %>% 
@@ -194,6 +195,7 @@ rue %>%
   geom_point(size = 3) + 
   geom_line() +
   geom_hline(yintercept = 1, linetype = "dashed") +
+  scale_color_grafify() +
   facet_grid(.~year) + 
   labs(y = "Ratio of 4yr RUE to 2 yr RUE",
        title = "Ratio of 4yr to 2yr rotation RUE is always > 1")
@@ -228,7 +230,9 @@ d1 <-
   pivot_longer(abs_gr:rue_ratio) %>% 
   mutate(name = factor(name, levels = c("mass_gpl", "abs_gr", "rel_gr", "rue_ratio"))) %>% 
   ggplot(aes(doy, value, color = rot_trt, group = name)) + 
-  stat_summary(fun = "mean", geom = "line", aes(color = rot_trt, group = rot_trt)) +
+  stat_summary(fun = "mean", geom = "line", aes(color = rot_trt, group = rot_trt), size = 2) +
+  scale_color_grafify() +
+  
   facet_grid(name~yearF, scales = "free")
 
 d2 <- 
@@ -239,6 +243,7 @@ d2 <-
   ggplot(aes(rot_trt, yield_Mgha, fill = rot_trt)) + 
   stat_summary(geom = "bar", color = "black") + 
   stat_summary(fun.data = "mean_cl_boot", geom = "errorbar", width = 0.5) +
+  scale_fill_grafify() +
   facet_grid(.~year)
 
 library(patchwork)
@@ -249,6 +254,16 @@ ggsave("01_growth-analysis/fig_fe-growth-analysis_rue.png")
 
 # yield components --------------------------------------------------------
 
+mrs_krnl500 %>% 
+  left_join(mrs_plotkey) %>% 
+  ggplot(aes(rot_trt, krnl500_g, color = rot_trt)) + 
+  stat_summary(geom = "point", size = 4) + 
+  stat_summary(geom = "errorbar", width = 0.5) +
+  #geom_jitter(size = 4, width = 0.2) +
+  scale_color_grafify() +
+  facet_grid(.~year, scales = "free")
+
+
 
 mrs_earrows %>% 
   # group_by(year, plot_id) %>% 
@@ -256,8 +271,10 @@ mrs_earrows %>%
   left_join(mrs_krnl500) %>% 
   pivot_longer(rows_nu:krnl500_g) %>% 
   left_join(mrs_plotkey) %>% 
+  filter(name == "krnl500_g") %>% 
   ggplot(aes(rot_trt, value, color = rot_trt)) + 
   #stat_summary(geom = "point") + 
   #stat_summary(geom = "errorbar", width = 0.5) +
   geom_jitter() +
+  scale_color_grafify() +
   facet_grid(name~year, scales = "free")

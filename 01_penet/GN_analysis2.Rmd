@@ -1,0 +1,384 @@
+---
+title: "Gina Nichols - GAMs"
+author: "Miranda Tilton"
+date: "October 30, 2020"
+output: pdf_document
+urlcolor: blue
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, fig.align = "center")
+```
+
+# Data processing
+
+```{r warning = FALSE, message = FALSE}
+# remotes::install_github("vanichols/maRsden")
+library(magrittr)
+library(maRsden)
+library(dplyr)
+library(ggplot2)
+library(lemon) # chunk option `render = lemon_print` makes tables prettier
+```
+
+```{r render = lemon_print, message = FALSE}
+myd <- 
+  mrs_penetrom %>% 
+  left_join(mrs_plotkey) %>% 
+  #filter(year != "2020") %>%
+  mutate(resis_Mpa = resis_kpa/1000) %>%
+  select(year, doy, block, rot_trt, plot_id, rep_id, depth_cm, resis_Mpa) %>% 
+  arrange(block, plot_id, rep_id, depth_cm)
+
+# make new factor variables and convert old trt/block variables into factors
+# sorry, I couldn't figure out how to do this in mutate() without gnarly warnings
+myd$year_doy <- as.factor(paste(myd$year, myd$doy, sep = "_"))
+myd$trt_yr <- as.factor(paste(myd$rot_trt, myd$year, myd$doy, sep = "_"))
+# myd$trt_block_yr <- as.factor(paste(myd$rot_trt, myd$block, myd$year, myd$doy, sep = "_"))
+myd$block <- as.factor(myd$block)
+myd$rot_trt <- as.factor(myd$rot_trt)
+
+head(myd, 12)
+```
+
+\newpage
+
+# Data visualization
+
+```{r fig.width = 7, fig.height = 8}
+# may want to account for interaction w/ year? looks like pattern changes over time
+ggplot(data = myd) + 
+  geom_line(aes(x = depth_cm, y = resis_Mpa, group = rep_id, color = year_doy)) +
+  facet_wrap( ~ block + rot_trt, ncol = 2)
+```
+
+\newpage
+
+# Fit and check GAM
+
+```{r model_fitting, warning = FALSE, message = FALSE, cache = TRUE}
+library(mgcv)
+mod1 <- gam(resis_Mpa ~ s(depth_cm, by = trt_yr, bs = "cr", k = 8) + trt_yr, 
+           data = myd, method = "REML")
+```
+
+```{r fig.height = 5}
+# plot(mod, residuals = TRUE, shade = TRUE)
+par(mar = c(4, 4, 3, 0))
+mgcv::gam.check(mod1)
+```
+
+To [check a GAM with `gam.check()`](https://rdrr.io/cran/mgcv/man/gam.check.html), we look for a few things:
+
+- If `edf` is too close to `k'`, we may need more knots
+- `k-index` is the estimate divided by the residual variance. The further below 1 this is, the more likely it is that there is missed pattern left in the residuals.
+- The p-value for the `k-index` is computed by simulation: the residuals are randomly re-shuffled `k.rep` times to obtain the null distribution of the differencing variance estimator, if there is no pattern in the residuals.
+- If the p-value is too close to zero, there is a significant pattern in the residuals that should be addressed.
+
+In this case, the `edf` values are not too close to 7, and the `k-index` is close to 1, but the residuals are heteroskedastic (i.e., have a megaphone shape), likely because the curves are all close to zero at zero depth but spread out a lot for higher depths.
+
+Next, I transform `resis_Mpa` with the square root (since all resistance values are non-negative) and fit another model, to unify/control variances at high depths.
+
+\newpage
+
+# Adjust for non-constant variance of `depth_cm` and refit
+
+```{r model_refitting, warning = FALSE, message = FALSE, cache = TRUE}
+mod2 <- gam(sqrt(resis_Mpa) ~ s(depth_cm, by = trt_yr, bs = "cr", k = 8) + trt_yr, 
+           data = myd, method = "REML")
+```
+
+```{r fig.height = 5}
+# plot(mod, residuals = TRUE, shade = TRUE)
+par(mar = c(4, 4, 3, 0))
+mgcv::gam.check(mod2)
+```
+
+Looking at the residuals plots for each group (two pages further down this document), it seems that there is still an issue with non-constant variance, but this time by year/doy instead of depth. To investigate, I remove the problem year and fit the model one more time.
+
+\newpage
+
+## View fitted model by group
+
+```{r fig.width = 6, fig.height = 3}
+# view the 24 fitted curves to visually inspect differences
+myd$p <- predict(mod2)
+
+ggplot(data = myd) +
+  geom_line(aes(x = depth_cm, y = p^2, color = year_doy, group = year_doy)) + # note p^2
+  facet_wrap( ~ rot_trt, ncol = 2) +
+  guides(color = FALSE)
+```
+
+\newpage
+
+## View residuals by group
+
+```{r fig.width = 7, fig.height = 3.5, out.width = "80%"}
+myd$resid <- mod2$residuals
+
+ggplot(data = myd) + 
+  geom_line(aes(x = depth_cm, y = resid, group = rep_id, color = year_doy)) +
+  facet_wrap( ~ trt_yr, ncol = length(unique(myd$year_doy)))
+```
+
+## View data with fitted curves by group
+
+```{r fig.width = 7, fig.height = 3.5, out.width = "80%"}
+ggplot(data = myd) + 
+  geom_line(aes(x = depth_cm, y = resis_Mpa, group = rep_id, color = year_doy)) +
+  geom_line(aes(x = depth_cm, y = p^2, group = rep_id), color = "black") + # note p^2
+  facet_wrap( ~ trt_yr, ncol = length(unique(myd$year_doy)))
+```
+
+\newpage
+
+# Remove year that is most unlike the others and (re)refit
+
+```{r model_rerefitting, warning = FALSE, message = FALSE, cache = TRUE}
+myd2 <- filter(myd, year != 2020)
+myd2$trt_yr <- as.factor(as.character(myd2$trt_yr))
+
+mod3 <- gam(sqrt(resis_Mpa) ~ s(depth_cm, by = trt_yr, bs = "cr", k = 12) + trt_yr,
+           data = myd2, method = "REML")
+```
+
+```{r fig.height = 5}
+# plot(mod, residuals = TRUE, shade = TRUE)
+par(mar = c(4, 4, 3, 0))
+mgcv::gam.check(mod3)
+```
+
+Whoops, that made the p-values worse... Let's stick with the second model?
+
+\newpage
+
+## View fitted model by group
+
+```{r fig.width = 6, fig.height = 3}
+# view the 24 fitted curves to visually inspect differences
+myd2$p <- predict(mod3)
+
+ggplot(data = myd2) +
+  geom_line(aes(x = depth_cm, y = p^2, color = year_doy, group = year_doy)) + # note p^2
+  facet_wrap( ~ rot_trt, ncol = 2) +
+  guides(color = FALSE)
+```
+
+\newpage
+
+## View residuals by group
+
+```{r fig.width = 7, fig.height = 3.5, out.width = "80%"}
+myd2$resid <- mod3$residuals
+
+ggplot(data = myd2) + 
+  geom_line(aes(x = depth_cm, y = resid, group = rep_id, color = year_doy)) +
+  facet_wrap( ~ trt_yr, nrow = 2)
+```
+
+## View data with fitted curves by group
+
+```{r fig.width = 7, fig.height = 3.5, out.width = "80%"}
+ggplot(data = myd2) + 
+  geom_line(aes(x = depth_cm, y = resis_Mpa, group = rep_id, color = year_doy)) +
+  geom_line(aes(x = depth_cm, y = p^2, group = rep_id), color = "black") + # note p^2
+  facet_wrap( ~ trt_yr, nrow = 2)
+```
+
+\newpage
+
+# Differences between treatments - 1st way
+
+To test for differences between treatments, we'll use the following function from [https://fromthebottomoftheheap.net/2017/10/10/difference-splines-i/](https://fromthebottomoftheheap.net/2017/10/10/difference-splines-i/):
+
+```{r}
+smooth_diff <- function(model, newdata, f1, f2, var, alpha = 0.05,
+                        unconditional = FALSE) {
+    xp <- predict(model, newdata = newdata, type = 'lpmatrix')
+    c1 <- grepl(f1, colnames(xp))
+    c2 <- grepl(f2, colnames(xp))
+    r1 <- newdata[[var]] == f1
+    r2 <- newdata[[var]] == f2
+    ## difference rows of xp for data from comparison
+    X <- xp[r1, ] - xp[r2, ]
+    ## zero out cols of X related to splines for other lochs
+    X[, ! (c1 | c2)] <- 0
+    ## zero out the parametric cols
+    X[, !grepl('^s\\(', colnames(xp))] <- 0
+    dif <- X %*% coef(model)
+    se <- sqrt(rowSums((X %*% vcov(model, unconditional = unconditional)) * X))
+    crit <- qt(alpha/2, df.residual(model), lower.tail = FALSE)
+    upr <- dif + (crit * se)
+    lwr <- dif - (crit * se)
+    data.frame(pair = paste(f1, f2, sep = '-'),
+               diff = dif,
+               se = se,
+               upper = upr,
+               lower = lwr)
+}
+```
+
+We want to compare the differences between treatments, within years, and averaging over blocks. First, we set up a data frame that pairs the variable levels between treatments, within year/doy values (and leaving out mention of blocks).
+
+```{r render = lemon_print}
+# get all combinations year/doy (excluding block this time)
+base_str <- unique(myd$year_doy)
+
+# add trt to the front of each base str, yielding pairwise df
+var_df <- data.frame(var1 = paste("2y", base_str, sep = "_"),
+                     var2 = paste("4y", base_str, sep = "_"),
+                     stringsAsFactors = FALSE)
+
+head(var_df)
+```
+
+\newpage
+
+Next, we create a data frame for prediction that contains the depth values and levels of `trt_yr`. (NOTE: using `mod2`)
+
+```{r, render = lemon_print}
+newdata <- expand.grid(depth_cm = unique(myd$depth_cm),
+                        trt_yr = levels(myd$trt_yr))
+
+out <- purrr::map_dfr(1:nrow(var_df), function(i) {
+  d <- smooth_diff(mod2, newdata, 
+              f1 = var_df[i,1], f2 = var_df[i,2], 
+              var = "trt_yr")
+  d$pair <- as.character(d$pair) # prevent map_dfr from combining factors
+  return(d)
+})
+
+comp <- cbind(depth_cm = unique(myd$depth_cm), out) # add depth values
+comp$pair <- as.factor(comp$pair) # make this a factor again for ggplot2
+head(comp)
+```
+
+Now, we can plot the difference between treatments, with associated confidence bands, for each block and year/doy combination. Any depth values where the shading does not cross the dashed red line (at diff = 0) are points where the treatment resistances differ significantly. \textcolor{red}{Note: this is all still on the sqrt scale. In other words, this is the difference of the expected square root of the response.} To conduct inference on the original scale, check out the next section.
+
+```{r fig.width = 6, fig.height = 4}
+ggplot(comp, aes(x = depth_cm, y = diff, group = pair)) +
+    geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.2) +
+    geom_line() +
+    geom_hline(aes(yintercept = 0), colour="#990000", linetype="dashed") +
+    facet_wrap(~ pair, ncol = 2) +
+    labs(x = NULL, y = 'Difference in resis_Mpa trend') +
+  ggtitle("Difference in resis_Mpa trend", subtitle = "Sqrt scale")
+```
+
+\newpage
+
+# Differences between treatments - 2nd way
+
+Here's a quick intro to `emmeans` by example:
+
+```{r warning = FALSE}
+library(emmeans)
+em <- emmeans(mod2, specs = "trt_yr") # get estimated marginal means
+em
+pairs(em) # get pairwise contrasts
+```
+
+\newpage
+
+You can specify `specs = pairwise ~ var` to get the contrasts at the same time as the estimates.
+
+```{r}
+em <- emmeans(mod2, specs = pairwise ~ "trt_yr")
+em
+```
+
+\newpage
+
+Even better, `type = "response"` will transform estimates back from the square-root scale to original scale. (Here, contrasts are still on sqrt scale, more info [here](https://cran.r-project.org/web/packages/emmeans/vignettes/comparisons.html))
+
+```{r}
+em <- emmeans(mod2, specs = pairwise ~ "trt_yr", type = "response")
+em
+```
+
+\newpage
+
+Technically, these are estimates for depth = `mean(depth_cm)`. Say we want to specify estimating for `depth_cm = 5`:
+
+```{r}
+em <- emmeans(mod2, specs = pairwise ~ "trt_yr", type = "response", at = list(depth_cm = 5))
+em
+```
+
+\newpage
+
+Let's work with the estimates and contrasts as two separate objects.
+
+```{r}
+em <- emmeans(mod2, specs = "trt_yr", type = "response") # estimates
+pem <- pairs(em) # contrasts
+```
+
+The `summary` of a pairs object can provide CIs of the estimated differences when `infer = c(TRUE, TRUE)`:
+(using `kable` to print only 3 digits - otherwise, output is too wide and p-vals end up on separate page)
+
+```{r digits = 3}
+knitr::kable(summary(pem, infer = c(TRUE, TRUE)), digits = 3) # using kable to fit on 1pg
+```
+
+\newpage
+
+Now, it would be awesome to let emmeans do the work of estimating the difference between two curves at all of the values we care about. In fact, applying `emmeans` with `at = list(depth_cm = v)` for many values of `v` gives us the same difference curves from `smooth_diff`, the first method of inference we discussed.
+
+```{r fig.height = 4, fig.width = 6}
+vec <- seq(from = 0, to = 45, by = 2.5) # can use finer seq if desired
+
+diffs_df <- purrr::map_dfr(vec, function(v) {
+  em <- emmeans(mod2, specs = "trt_yr", type = "response", at = list(depth_cm = v))
+  pem <- pairs(em)
+  df <- as.data.frame(summary(pem, infer = c(TRUE, TRUE)))
+  df$depth_cm <- v
+  df
+})
+
+# grab only the rows that compare the treatments within the same year
+str <- paste(var_df$var1, "-", var_df$var2)
+diffs_df <- dplyr::filter(diffs_df, contrast %in% str)
+
+ggplot(diffs_df) +
+  geom_point(aes(x = depth_cm, y = estimate, color = contrast)) +
+  geom_ribbon(aes(x = depth_cm, ymin = lower.CL, ymax = upper.CL), alpha = .5) +
+  facet_wrap(~contrast) + geom_hline(yintercept = 0) +
+  guides(color = FALSE) +
+  ggtitle("Differences of expected sqrt(Resis_Mpa)")
+```
+
+\newpage
+
+We can also use a similar strategy to extract the predictions and their CIs, and plot them on the same curve to visualize where differences are significant on the original scale.
+
+```{r fig.height = 4, fig.width = 6}
+vec <- seq(from = 0, to = 45, by = 2.5)
+
+ests_df <- purrr::map_dfr(vec, function(v) {
+  em <- emmeans(mod2, specs = "trt_yr", type = "response", at = list(depth_cm = v))
+  df <- as.data.frame(em)
+  df$depth_cm <- v
+  
+  # want trt information separately for faceeting later
+  df <- tidyr::separate(df, col = trt_yr, sep = "y_", remove = FALSE,
+                        into = c("trt", "yr_doy"))
+  df
+})
+
+ests_df <- arrange(ests_df, depth_cm)
+
+ggplot(ests_df, aes(group = trt, color = trt, fill = trt)) +
+  geom_line(aes(x = depth_cm, y = response)) +
+  geom_ribbon(aes(x = depth_cm, ymin = lower.CL, ymax = upper.CL),
+              alpha = .5) +
+  facet_wrap(~yr_doy)
+```
+
+
+
+```{r echo = FALSE}
+# play a fanfare noise when everything is done running
+beepr::beep(3)
+```
