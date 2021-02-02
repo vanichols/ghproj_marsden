@@ -15,6 +15,15 @@ theme_set(theme_bw())
 
 # data --------------------------------------------------------------------
 
+mrs_cornylds %>% 
+  left_join(mrs_plotkey) %>% 
+  group_by(harv_crop) %>% 
+  summarise(mn = mean(yield_Mgha))
+
+library(saapsim)
+
+saf_kgha_to_buac_corn(600)
+
 dat <- 
   mrs_cornbio %>%
   left_join(mrs_plotkey) %>% 
@@ -228,7 +237,8 @@ d1 <-
   rename("mass_gpl" = mpreds) %>% 
   left_join(rue_rat) %>% 
   pivot_longer(abs_gr:rue_ratio) %>% 
-  mutate(name = factor(name, levels = c("mass_gpl", "abs_gr", "rel_gr", "rue_ratio"))) %>% 
+  filter(name != "rue_ratio") %>% 
+  mutate(name = factor(name, levels = c("mass_gpl", "abs_gr", "rel_gr"))) %>% 
   ggplot(aes(doy, value, color = rot_trt, group = name)) + 
   stat_summary(fun = "mean", geom = "line", aes(color = rot_trt, group = rot_trt), size = 2) +
   scale_color_grafify() +
@@ -249,7 +259,7 @@ d2 <-
 library(patchwork)
 d1/d2
 
-ggsave("01_growth-analysis/fig_fe-growth-analysis_rue.png")
+ggsave("01_growth-analysis/fig_fe-growth-analysis_yields.png")
 
 
 # yield components --------------------------------------------------------
@@ -261,9 +271,12 @@ mrs_krnl500 %>%
   stat_summary(geom = "errorbar", width = 0.5) +
   #geom_jitter(size = 4, width = 0.2) +
   scale_color_grafify() +
-  facet_grid(.~year, scales = "free")
+  facet_grid(.~year, scales = "free") + 
+  labs(x = NULL, y = "Weight of 500 kernals (g)") + 
+  theme(axis.title = element_text(size = rel(1.3)),
+        strip.text = element_text(size = rel(1.3)))
 
-
+ggave("01_growth-analysis/fig_kernal-size.png")
 
 mrs_earrows %>% 
   # group_by(year, plot_id) %>% 
