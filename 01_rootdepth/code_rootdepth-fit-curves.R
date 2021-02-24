@@ -26,6 +26,7 @@ mrs_rootdepth %>%
 rd <- 
   mrs_rootdepth %>% 
   left_join(mrs_plotkey) %>% 
+  ungroup() %>% 
   #filter(!(doy > 230 & year == 2020)) %>% 
   mutate(dop = ifelse(rootdepth_cm == 0, doy, NA)) %>% 
   fill(dop) %>% 
@@ -45,6 +46,7 @@ rd %>%
 rd_max <- 
   mrs_rootdepth %>% 
   left_join(mrs_plotkey) %>% 
+  ungroup() %>% 
   mutate(dop = ifelse(rootdepth_cm == 0, doy, NA)) %>% 
   fill(dop) %>% 
   mutate(dap = doy - dop) %>% 
@@ -66,13 +68,14 @@ rd_max <-
 
 #--not converging
 fm1 <- nls(rd_sc ~ SSbgrp(dap, w.max, lt.e, ldt), data = rd)
+
 #--this one works
 fm1 <- nls(rd_sc ~ SSbgf(dap, w.max, t.e, t.m), data = rd)
 
-#--weibull--
+#--weibull--no working
 fm2 <- nls(rd_sc ~ SSweibull(dap, Asym, Drop, lrc, pwr), data = rd_max)
 
-#--logistic
+#--logistic ok
 fm3 <- nls(rd_sc ~ SSlogis(dap, Asym, xmid, scal), data = rd_max)
 
 
@@ -84,7 +87,8 @@ md <-
   select(year, dap, rd_sc, rot_trt) %>% 
   mutate(eu = paste0(year,"_", rot_trt)) %>% #--add an eu identifier
   mutate(year_id = as.factor(year),
-         rot_trt = as.factor(rot_trt))
+         rot_trt = as.factor(rot_trt),
+         eu = as.factor(eu))
 
 mdG <- groupedData(rd_sc ~ dap | eu, data = md)
 
@@ -93,7 +97,8 @@ md_max <-
   select(year, dap, rd_sc, rot_trt) %>% 
   mutate(eu = paste0(year,"_", rot_trt)) %>% #--add an eu identifier
   mutate(year_id = as.factor(year),
-         rot_trt = as.factor(rot_trt))
+         rot_trt = as.factor(rot_trt),
+         eu = as.factor(eu))
 
 mdG_max <- groupedData(rd_sc ~ dap | eu, data = md_max)
 
@@ -145,6 +150,33 @@ contrast(emmeans(fmm3a, ~ rot_trt, param = "xmid"), "pairwise")
 
 emmeans(fmm3a, ~ rot_trt, param = "scal")
 contrast(emmeans(fmm3a, ~ rot_trt, param = "scal"), "pairwise")
+
+
+#--look at preds
+
+mdG_max$prds <- predict(fmm3a, level = 1)
+
+fmm3a.sim1 <- simulate_nlme(fmm3a, nsim = 100, psim = 1, level = 1)
+mdG_max$mn.s <- apply(fmm3a.sim1, 1, mean)
+mdG_max$mxn.s <- apply(fmm3a.sim1, 1, max)
+mdG_max$mnn.s <- apply(fmm3a.sim1, 1, min)
+
+mdG_max <- as_tibble(mdG_max)
+
+ggplot() + 
+  #  geom_point(data = leachG, aes(x = nrate_kgha, y = leaching_kgha)) + 
+  geom_ribbon(data = mdG_max, 
+              mapping = aes(x = dap, 
+                            ymin = mxn.s, 
+                            ymax = mnn.s, fill = rot_trt), 
+              alpha = 0.5) + 
+  geom_line(data = mdG_max, aes(x = dap, 
+                               y = prds, 
+                               color = rot_trt), size = 2) +
+  scale_y_log10() +
+  facet_grid(.~year)
+
+
 
 
 

@@ -6,7 +6,6 @@
 library(maRsden)
 library(tidyverse)
 library(grafify)
-
 #remotes::install_github("femiguez/nlraa")
 library(nlraa)
 library(janitor)
@@ -117,6 +116,20 @@ prd_dat %>%
 
 ggsave("01_growth-analysis/fig_fe-logistic-fit.png")
 
+#--w/o obs, log-scale
+prd_dat %>%
+  ggplot(aes(doy, mpreds, color = rot_trt)) + 
+  geom_line(size = 2) + 
+  # geom_point(data = mod_dat,
+  #            aes(doy, mass_gpl, color = rot_trt),
+  #            alpha = 0.4, size = 4) +
+  facet_grid(.~yearF) + 
+  scale_color_grafify() +
+  scale_y_log10() +
+  labs(title = "logistic fit",
+       y = "Biomass per plant (g)")
+
+
 # beta fit ----------------------------------------------------------------
 
 #--test
@@ -159,6 +172,7 @@ dat_deriv <-
                                  scal = scal,
                                  doy = doy)) 
 
+#--all of them
 dat_deriv %>% 
   left_join(prd_dat) %>% 
   filter(!is.na(mpreds)) %>%
@@ -173,6 +187,43 @@ dat_deriv %>%
 ggsave("01_growth-analysis/fig_fe-growth-analysis.png")
 
 
+#--log scale, no rel_gr + yields
+
+yld_dat <- 
+  mrs_cornylds %>% 
+  left_join(mrs_plotkey) %>% 
+  filter(harv_crop != "C3") %>% 
+  filter(year %in% c(2013, 2014, 2018, 2019, 2020)) %>% 
+  group_by(year, rot_trt) %>% 
+  summarise(yield_Mgha = mean(yield_Mgha, na.rm = T),
+            yield_Mgha = round(yield_Mgha, 1)) %>% 
+  mutate(name = "abs_gr",
+         yearF = as.factor(year))
+yld_dat
+
+dat_deriv %>% 
+  left_join(prd_dat) %>% 
+  filter(!is.na(mpreds)) %>%
+  mutate(rel_gr = abs_gr/mpreds) %>% 
+  rename("mass_gpl" = mpreds) %>% 
+  pivot_longer(abs_gr:rel_gr) %>% 
+  filter(name != "rel_gr") %>% 
+  mutate(name = factor(name, levels = c("mass_gpl", "abs_gr"))) %>%   
+  ggplot(aes(doy, value, color = rot_trt, group = name)) + 
+  stat_summary(fun = "mean", geom = "line", aes(color = rot_trt, group = rot_trt), size = 2) +
+  geom_text(data = yld_dat %>% filter(rot_trt == "2y"), 
+            aes(x = 200, y = 0.01, label = yield_Mgha, color = rot_trt)) +
+  geom_text(data = yld_dat %>% filter(rot_trt == "4y"), 
+            aes(x = 200, y = 0.1, label = yield_Mgha, color = rot_trt)) +
+  scale_color_grafify() +
+  scale_y_log10() +
+  labs(y = "log-scale",
+       title = "abs_gr = grams per plant per day",
+       subtitle = "yields in Mg/ha on abs_gr panels") +
+  facet_grid(name~yearF, scales = "free")
+
+
+ggsave("01_growth-analysis/fig_fe_log-scale.png")
 
 # rue ---------------------------------------------------------------------
 

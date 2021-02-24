@@ -9,7 +9,6 @@ library(lubridate)
 library(readxl)
 library(patchwork)
 library(maRsden)
-library(GinaBooty)
 
 mrs_rootdepth
 
