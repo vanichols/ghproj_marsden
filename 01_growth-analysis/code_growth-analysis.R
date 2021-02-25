@@ -49,6 +49,55 @@ mod_dat %>%
 
 ggsave("01_growth-analysis/fig_observations.png")
 
+
+
+# harvest index -----------------------------------------------------------
+
+mrs_cornbio_gn %>% 
+  filter(organ %in% c("plant", "ear")) %>% 
+  ggplot(aes(doy, mass_gpl)) + 
+  geom_point(aes(color = organ)) + 
+  facet_grid(.~year)
+
+mrs_cornbio_gn %>% select(organ) %>% distinct()
+
+gina_hi <- 
+  mrs_cornbio_gn %>% 
+  group_by(year) %>% 
+  filter(doy == max(doy)) %>% 
+  filter(organ %in% c("plant", "ear")) %>% 
+  select(-mass_g) %>% 
+  pivot_wider(names_from = organ, values_from = mass_gpl) %>% 
+  mutate(hi = ear/plant) %>% 
+  left_join(mrs_plotkey) 
+
+gina_hi %>% 
+  ggplot(aes(rot_trt, hi)) + 
+  geom_point() + 
+  facet_grid(.~year)
+
+
+#--what are will's delineations?
+mrs_cornbio_wo %>% select(organ) %>% distinct()
+
+will_hi <- 
+  mrs_cornbio_wo %>%
+  select(year:mass_g) %>% 
+  group_by(year) %>% 
+  filter(doy == max(doy)) %>% 
+  filter(organ %in% c("plant", "grain")) %>% 
+  pivot_wider(names_from = organ, values_from = mass_g) %>% 
+  mutate(hi = grain/plant) %>% 
+  left_join(mrs_plotkey) %>% 
+  filter(harv_crop != "C3")
+
+will_hi %>% 
+  ggplot(aes(rot_trt, hi)) + 
+  geom_point() + 
+  facet_grid(.~year)
+
+
+
 # individual model fitting -----------------------------------------------------------
 
 mod_coefs <- 
@@ -88,7 +137,7 @@ mod_coefs %>%
 new_dat <- 
   mod_dat %>% 
   select(yearF, rot_trt) %>% 
-  expand_grid(., doy = seq(130, 300, 1))
+  expand_grid(., doy = seq(130, 300, 5))
 
 prd_dat <- 
   mod_dat %>% 
@@ -96,8 +145,8 @@ prd_dat <-
   nest() %>% 
   mutate(mfit = data %>% 
            map(possibly(~nls(mass_gpl ~ SSlogis(doy, Asym, xmid, scal), data = .), NULL))) %>% 
-  mutate(doy = list(seq(130, 300, 1)),
-         mpreds = mfit %>% map(predict, newdata = data.frame(doy = seq(130, 300, 1)))
+  mutate(doy = list(seq(130, 300, 5)),
+         mpreds = mfit %>% map(predict, newdata = data.frame(doy = seq(130, 300, 5)))
          ) %>% 
   select(-data, -mfit) %>% 
   unnest(cols = c(doy, mpreds))
@@ -187,7 +236,24 @@ dat_deriv %>%
 ggsave("01_growth-analysis/fig_fe-growth-analysis.png")
 
 
-#--log scale, no rel_gr + yields
+#--log scale, no rel_gr + yields + hi
+
+
+hi_dat <-
+  bind_rows(
+    will_hi %>%
+      group_by(rot_trt, year) %>%
+      summarise(hi = mean(hi)),
+    
+    gina_hi %>%
+      group_by(rot_trt, year) %>%
+      summarise(hi = mean(hi))
+  ) %>%
+  mutate(
+    hi = round(hi, 2),
+    name = "mass_gpl",
+    yearF = as.factor(year))
+
 
 yld_dat <- 
   mrs_cornylds %>% 
@@ -211,15 +277,22 @@ dat_deriv %>%
   mutate(name = factor(name, levels = c("mass_gpl", "abs_gr"))) %>%   
   ggplot(aes(doy, value, color = rot_trt, group = name)) + 
   stat_summary(fun = "mean", geom = "line", aes(color = rot_trt, group = rot_trt), size = 2) +
+  #--yields
   geom_text(data = yld_dat %>% filter(rot_trt == "2y"), 
             aes(x = 200, y = 0.01, label = yield_Mgha, color = rot_trt)) +
   geom_text(data = yld_dat %>% filter(rot_trt == "4y"), 
             aes(x = 200, y = 0.1, label = yield_Mgha, color = rot_trt)) +
-  scale_color_grafify() +
+  #--hi
+  geom_text(data = hi_dat %>% filter(rot_trt == "2y"),
+            aes(x = 250, y = 1, label = hi, color = rot_trt)) +
+  geom_text(data = hi_dat %>% filter(rot_trt == "4y"),
+            aes(x = 250, y = 10, label = hi, color = rot_trt)) +
+    scale_color_grafify() +
   scale_y_log10() +
   labs(y = "log-scale",
        title = "abs_gr = grams per plant per day",
-       subtitle = "yields in Mg/ha on abs_gr panels") +
+       subtitle = "yields in Mg/ha on abs_gr panels, harvest index on mass_gpl panel",
+       caption = "2018-2020 includes cobs in harvest index") +
   facet_grid(name~yearF, scales = "free")
 
 
@@ -327,7 +400,7 @@ mrs_krnl500 %>%
   theme(axis.title = element_text(size = rel(1.3)),
         strip.text = element_text(size = rel(1.3)))
 
-ggave("01_growth-analysis/fig_kernal-size.png")
+ggsave("01_growth-analysis/fig_kernal-size.png")
 
 mrs_earrows %>% 
   # group_by(year, plot_id) %>% 
@@ -342,3 +415,5 @@ mrs_earrows %>%
   geom_jitter() +
   scale_color_grafify() +
   facet_grid(name~year, scales = "free")
+
+
