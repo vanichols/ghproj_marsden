@@ -22,10 +22,25 @@ sw15 <-
   rawdat %>% 
   filter(sensor_depth_cm == 15) %>% 
   select(-sensor_depth_cm) %>% 
-  # make new factor variables and convert old trt/block variables into factors
   mutate(
-  plot_id = as.factor(plot_id),
-      block = as.factor(block),
+    trt_block_year = paste(rot_trt, block, year, sep = "_"),
+    trt_block_year = as.factor(trt_block_year),
+    trt_year = paste(rot_trt, year, sep = "_"),
+    trt_year = as.factor(trt_year),
+    plot_id = as.factor(plot_id),
+    block = as.factor(block),
+    rot_trt = as.factor(rot_trt)
+  )
+
+sw45 <- 
+  rawdat %>% 
+  filter(sensor_depth_cm == 45) %>% 
+  select(-sensor_depth_cm) %>% 
+  mutate(
+    trt_block_year = paste(rot_trt, block, year, sep = "_"),
+    trt_block_year = as.factor(trt_block_year),
+    plot_id = as.factor(plot_id),
+    block = as.factor(block),
     rot_trt = as.factor(rot_trt)
   )
 
@@ -43,9 +58,13 @@ sw15 <-
 #--each year, there are 4 blocks, each with 2 treatments
 
 # may want to account for interaction w/ year? looks like pattern changes over time
-ggplot(data = sw15) + 
-  geom_line(aes(x = doy, y = value, group = plot_id)) +
+ggplot(data = sw15 %>% filter(rot_trt == "2y")) + 
+  geom_line(aes(x = doy, y = value, group = plot_id, color = plot_id)) +
   facet_wrap( ~ year + rot_trt)
+
+#--I have ~136 days of data for each eu
+sw15 %>% 
+  filter(rot_trt == "2y", year == 2018, plot_id == "2018_13")
 
 # Fit and check GAM
 # The general format of a gam() call is gam(y ~ s(x1, by = x2, k = 15) + x2, data = data), 
@@ -63,7 +82,11 @@ sw15_18 <-
   filter(year == 2018, doy < 260) %>% 
   filter(!is.na(value))
 
-mod <- gam(value ~ s(doy, by = plot_id, bs = "cr", k = 70) + plot_id,
+mod <- gam(value ~ s(doy, by = plot_id, bs = "cr", k = 50) + plot_id,
+           data = sw15_18, method = "REML")
+
+#--using trt_block_year, like miranda
+mod1 <- gam(value ~ s(doy, by = trt_block_year, bs = "cr", k = 50) + trt_block_year,
            data = sw15_18, method = "REML")
 
 plot(mod, residuals = TRUE, shade = TRUE)
@@ -83,7 +106,7 @@ mgcv::gam.check(mod)
 # 
 
 # view the 24 fitted curves to visually inspect differences
-sw15_18$p <- predict(mod)
+sw15_18$p <- predict(mod1)
 
 # 
 ggplot(data = sw15_18) +
@@ -106,16 +129,16 @@ ggplot(data = sw15_18) +
 
 # Remove year that is most unlike the others and (re)refit
 
-myd <- filter(myd, year != 2020) # modifying in place because I'm lazy :(
-myd$trt_block_yr <- as.factor(as.character(myd$trt_block_yr))
-myd$trt_yr_doy <- as.factor(as.character(myd$trt_yr_doy))
-
-mod <- gam(sqrt(resis_Mpa) ~ s(depth_cm, by = trt_block_yr, bs = "cr", k = 8) + trt_block_yr, 
-           data = myd, method = "REML")
-
-# plot(mod, residuals = TRUE, shade = TRUE)
-par(mar = c(4, 4, 3, 0))
-mgcv::gam.check(mod)
+# myd <- filter(myd, year != 2020) # modifying in place because I'm lazy :(
+# myd$trt_block_yr <- as.factor(as.character(myd$trt_block_yr))
+# myd$trt_yr_doy <- as.factor(as.character(myd$trt_yr_doy))
+# 
+# mod <- gam(sqrt(resis_Mpa) ~ s(depth_cm, by = trt_block_yr, bs = "cr", k = 8) + trt_block_yr, 
+#            data = myd, method = "REML")
+# 
+# # plot(mod, residuals = TRUE, shade = TRUE)
+# par(mar = c(4, 4, 3, 0))
+# mgcv::gam.check(mod)
 
 #I'm happy with the `edf`, `k-index`, and p-values here, so we can visualize the model and residuals, and then use the model for inference.
 
@@ -124,49 +147,55 @@ mgcv::gam.check(mod)
 ## View fitted model by group
 
 # view the 24 fitted curves to visually inspect differences
-myd$p <- predict(mod)
+#myd$p <- predict(mod)
 
 # Q: is there a way to predict on the level of year_doy_trt? I think the term is marginal over blocks?
 
-ggplot(data = myd) +
-  geom_line(aes(x = depth_cm, y = p^2, color = year_doy, group = year_doy)) + # note p^2
-  facet_wrap( ~ block + rot_trt, ncol = 2) +
-  guides(color = FALSE) + 
-  labs(y = "resis_MPa")
+# ggplot(data = myd) +
+#   geom_line(aes(x = depth_cm, y = p^2, color = year_doy, group = year_doy)) + # note p^2
+#   facet_wrap( ~ block + rot_trt, ncol = 2) +
+#   guides(color = FALSE) + 
+#   labs(y = "resis_MPa")
 
 
-ggplot(data = myd) +
-  geom_line(aes(x = depth_cm, y = p^2, group = trt_block_yr, color = rot_trt)) + # note p^2
-  facet_wrap( ~ year_doy, ncol = 2) +
-  labs(y = "resis_MPa")
+# ggplot(data = myd) +
+#   geom_line(aes(x = depth_cm, y = p^2, group = trt_block_yr, color = rot_trt)) + # note p^2
+#   facet_wrap( ~ year_doy, ncol = 2) +
+#   labs(y = "resis_MPa")
 
 
 # Try w/o intercept
-mod2 <- gam(sqrt(resis_Mpa) ~ s(depth_cm, by = trt_block_yr, bs = "cr", k = 8), 
-           data = myd, method = "REML")
-
-# plot(mod, residuals = TRUE, shade = TRUE)
-par(mar = c(4, 4, 3, 0))
-mgcv::gam.check(mod2)
+# mod2 <- gam(sqrt(resis_Mpa) ~ s(depth_cm, by = trt_block_yr, bs = "cr", k = 8), 
+#            data = myd, method = "REML")
+# 
+# # plot(mod, residuals = TRUE, shade = TRUE)
+# par(mar = c(4, 4, 3, 0))
+# mgcv::gam.check(mod2)
 # Oh very bad. 
 
 ## View residuals by group
 
-myd$resid <- mod$residuals
-
-ggplot(data = myd) + 
-  geom_point(aes(x = depth_cm, y = resid, group = rep_id, color = year_doy)) +
-  facet_wrap( ~ trt_block_yr, ncol = length(unique(myd$year_doy)))
+# myd$resid <- mod$residuals
+# 
+# ggplot(data = myd) + 
+#   geom_point(aes(x = depth_cm, y = resid, group = rep_id, color = year_doy)) +
+#   facet_wrap( ~ trt_block_yr, ncol = length(unique(myd$year_doy)))
 
 
 ## View data with fitted curves by group
 
-ggplot(data = myd) + 
-  geom_line(aes(x = depth_cm, y = resis_Mpa, group = rep_id, color = year_doy)) +
-  geom_line(aes(x = depth_cm, y = p^2, group = rep_id), color = "black") + # note p^2
-  facet_wrap( ~ trt_block_yr, ncol = length(unique(myd$year_doy)))
+# ggplot(data = myd) + 
+#   geom_line(aes(x = depth_cm, y = resis_Mpa, group = rep_id, color = year_doy)) +
+#   geom_line(aes(x = depth_cm, y = p^2, group = rep_id), color = "black") + # note p^2
+#   facet_wrap( ~ trt_block_yr, ncol = length(unique(myd$year_doy)))
 
-# Differences between treatments
+ggplot(data = sw15_18) + 
+  geom_line(aes(x = doy, y = value, group = plot_id), color = "red") +
+  geom_line(aes(x = doy, y = p, group = plot_id), color = "black") + 
+  facet_wrap( ~ year + rot_trt)
+
+
+# diffs between trts ------------------------------------------------------
 
 #To test for differences between treatments, we'll use the following function from [https://fromthebottomoftheheap.net/2017/10/10/difference-splines-i/](https://fromthebottomoftheheap.net/2017/10/10/difference-splines-i/):
 
@@ -195,18 +224,27 @@ smooth_diff <- function(model, newdata, f1, f2, var, alpha = 0.05,
                lower = lwr)
 }
 
-#We want to compare the differences between treatments, within blocks and years. First, we set up a data frame that pairs the variable levels between treatments, within blocks and year/doy values.
+#We want to compare the differences between treatments, within blocks and years.
+#--actually I want to just compared them within a year but ok
+# First, we set up a data frame that pairs the variable levels between treatments, within blocks and year/doy values.
 
 #--can we just do within year_doy?
 
 # get all combinations of block and year/doy
-base_str <- as.vector(sapply(unique(myd$block), function(s) {
-  paste(s, unique(myd$year_doy), sep = "_")
-  }))
+# base_str <- as.vector(sapply(unique(myd$block), function(s) {
+#   paste(s, unique(myd$year_doy), sep = "_")
+#   }))
+
+base_str <- as.vector(sapply(unique(sw15_18$block), function(s) {
+  paste(s, unique(sw15_18$year), sep = "_")
+}))
+
+base_str
 
 # get all combinations of year/doy
-base_str2 <- as.vector(unique(myd$year_doy))
+#base_str2 <- as.vector(unique(myd$year_doy))
 
+base_str2 <- as.vector(unique(sw15_18$year))
 
 # add trt to the front of each base str, yielding pairwise df
 var_df <- data.frame(var1 = paste("2y", base_str, sep = "_"),
@@ -222,36 +260,49 @@ var_df2 <- data.frame(var1 = paste("2y", base_str2, sep = "_"),
 var_df2
 
 #Next, we create a data frame for prediction that contains the depth values and levels of `trt_block_yr`.
+# So I want doy and levels of trt_block_year, but actually plot_id is fine for that
 
-newdata <- expand.grid(depth_cm = unique(myd$depth_cm),
-                        trt_block_yr = levels(myd$trt_block_yr))
+# newdata <- expand.grid(depth_cm = unique(myd$depth_cm),
+#                         trt_block_yr = levels(myd$trt_block_yr))
 
-#--make depth smoother/more consistent?
-newdata2 <- expand.grid(depth_cm = seq(0, 45, by = 1),
-                       trt_block_yr = levels(myd$trt_block_yr))
+newdata <- expand.grid(doy = unique(sw15_18$doy),
+                       trt_block_year = levels(sw15_18$trt_block_year))
+
+head(newdata)
+# #--make depth smoother/more consistent?
+# newdata2 <- expand.grid(depth_cm = seq(0, 45, by = 1),
+#                        trt_block_year = levels(myd$trt_block_year))
+
+#--do it at the level of trt_year
+newdata2 <- expand.grid(doy = unique(sw15_18$doy),
+                       trt_year = levels(sw15_18$trt_year))
+
 
 #Create one for prediction that contains the depth values and levels of `trt_yr_doy` (not working in fxn).
 
-newdata3 <- expand.grid(depth_cm = seq(0, 45, by = 1),
-                        trt_yr_doy = levels(myd$trt_yr_doy))
-head(newdata3)
+# newdata3 <- expand.grid(depth_cm = seq(0, 45, by = 1),
+#                         trt_yr_doy = levels(myd$trt_yr_doy))
+# head(newdata3)
+# newdata3 <- expand.grid(doy = unique(sw15_18$doy),
+#                         trt_yr = levels(myd$trt_yr_doy))
+# head(newdata3)
 
 #-test
 f1.test <- var_df[1, 1]
 f2.test <- var_df[1, 2]
 
-d.test <- smooth_diff(mod, newdata, 
+d.test <- smooth_diff(mod1, newdata, 
                       f1 = f1.test,
                       f2 = f2.test,
                       var = "trt_block_year")
 
 #--ok, doesn't work, work through function itself...
 
-xp <- predict(mod, newdata, type = 'lpmatrix')
-c1 <- grepl("2y_b1_2018_130", colnames(xp))
-c2 <- grepl("4y_b1_2018_130", colnames(xp))
-r1 <- newdata[["trt_block_year"]] == "2y_b1_2018_130"
-r2 <- newdata[["trt_block_year"]] == "4y_b1_2018_130"
+xp <- predict(mod1, newdata, type = 'lpmatrix')
+c1 <- grepl("2y_b1_2018", colnames(xp))
+c2 <- grepl("4y_b1_2018", colnames(xp))
+r1 <- newdata[["trt_block_year"]] == "2y_b1_2018"
+r2 <- newdata[["trt_block_year"]] == "4y_b1_2018"
 ## difference rows of xp for data from comparison
 X <- xp[r1, ] - xp[r2, ]
 ## zero out cols of X related to splines for other lochs
@@ -273,56 +324,68 @@ data.frame(pair = paste(f1, f2, sep = '-'),
 
 # but this works. Ugh what am I missing. 
 out <- purrr::map_dfr(1:nrow(var_df), function(i) {
-  d <- smooth_diff(mod, newdata, 
+  d <- smooth_diff(mod1, newdata, 
               f1 = var_df[i,1], f2 = var_df[i,2], 
-              var = "trt_block_yr")
+              var = "trt_block_year")
   d$pair <- as.character(d$pair) # prevent map_dfr from combining factors
   return(d)
 })
 
-comp <- cbind(depth_cm = unique(myd$depth_cm), out) # add depth values
+comp <- cbind(doy = unique(sw15_18$doy), out) # add depth values
+comp$pair <- as.factor(comp$pair) # make this a factor again for ggplot2
+head(comp)
+# 
+# out2 <- purrr::map_dfr(1:nrow(var_df), function(i) {
+#   d <- smooth_diff(mod1, newdata2, 
+#                    f1 = var_df[i,1], f2 = var_df[i,2], 
+#                    var = "trt_block_year")
+#   d$pair <- as.character(d$pair) # prevent map_dfr from combining factors
+#   return(d)
+# })
+# 
+# comp2 <- cbind(depth_cm = seq(0, 45, by = 1), out2) # add depth values
+# comp2$pair <- as.factor(comp2$pair) # make this a factor again for ggplot2
+# head(comp2)
+
+# #--try w/o block?
+# out3 <- purrr::map_dfr(1:nrow(var_df3), function(i) {
+#   d <- smooth_diff(mod, newdata2, 
+#                    f1 = var_df3[i,1], f2 = var_df3[i,2], 
+#                    var = "trt__yr")
+#   d$pair <- as.character(d$pair) # prevent map_dfr from combining factors
+#   return(d)
+# })
+
+
+
+#First, remember that the model is predicting sqrt(resis_Mpa), 
+# so we should transform the predictions and confidence intervals back to their original scale.
+
+# comp2$diff2 <- comp2$diff^2
+# comp2$upper2 <- comp2$upper^2
+# comp2$lower2 <- comp2$lower^2
+
+#--at level of trt-year
+out2 <- purrr::map_dfr(1:nrow(var_df2), function(i) {
+  d <- smooth_diff(mod1, newdata2, 
+                   f1 = var_df2[i,1], f2 = var_df2[i,2], 
+                   var = "trt_year")
+  d$pair <- as.character(d$pair) # prevent map_dfr from combining factors
+  return(d)
+})
+
+comp <- cbind(doy = unique(sw15_18$doy), out) # add depth values
 comp$pair <- as.factor(comp$pair) # make this a factor again for ggplot2
 head(comp)
 
-out2 <- purrr::map_dfr(1:nrow(var_df), function(i) {
-  d <- smooth_diff(mod, newdata2, 
-                   f1 = var_df[i,1], f2 = var_df[i,2], 
-                   var = "trt_block_yr")
-  d$pair <- as.character(d$pair) # prevent map_dfr from combining factors
-  return(d)
-})
-
-comp2 <- cbind(depth_cm = seq(0, 45, by = 1), out2) # add depth values
-comp2$pair <- as.factor(comp2$pair) # make this a factor again for ggplot2
-head(comp2)
-
-#--try w/o block?
-out3 <- purrr::map_dfr(1:nrow(var_df3), function(i) {
-  d <- smooth_diff(mod, newdata2, 
-                   f1 = var_df3[i,1], f2 = var_df3[i,2], 
-                   var = "trt__yr")
-  d$pair <- as.character(d$pair) # prevent map_dfr from combining factors
-  return(d)
-})
-
-
-
-#First, remember that the model is predicting sqrt(resis_Mpa), so we should transform the predictions and confidence intervals back to their original scale.
-
-comp2$diff2 <- comp2$diff^2
-comp2$upper2 <- comp2$upper^2
-comp2$lower2 <- comp2$lower^2
 
 #Now, we can plot the difference between treatments, with associated confidence bands, for each block and year/doy combination. Any depth values where the shading does not cross the dashed red line (at diff = 0) are points where the treatment resistances differ significantly.
 
-ggplot(comp, aes(x = depth_cm, y = diff2, group = pair)) +
-    geom_ribbon(aes(ymin = lower2, ymax = upper2), alpha = 0.2) +
+ggplot(comp, aes(x = doy, y = diff, group = pair)) +
+    geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.2) +
     geom_line() +
     geom_hline(aes(yintercept = 0), colour="#990000", linetype="dashed") +
-    facet_wrap(~ pair, ncol = 2) +
-    labs(x = NULL, y = 'Difference in resis_Mpa trend') +
-  ggtitle("Difference in resis_Mpa trend", subtitle = "Original scale")
-
+    facet_wrap(~ pair, ncol = 2) 
 
 ggplot(comp, aes(x = depth_cm, y = diff, group = pair)) +
     geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.2) +
@@ -359,29 +422,165 @@ comp2 %>%
   scale_y_reverse() 
 
 
-#
 comp %>% 
-  as_tibble() %>% 
+  as_tibble() %>%
   mutate(t2yH = ifelse(lower > 0, 1, 0),
-         t4yH = ifelse(upper < 0, -1, 0)) %>% 
+         t4yH = ifelse(upper < 0, 1, 0),
+         trtsig = t2yH + t4yH)  %>% 
+  filter(trtsig != 0) %>% 
+  separate(pair, into = c("p1", "p2"), sep = "-") %>% 
+  separate(p1, into = c("trt", "block", "year")) %>% 
+  select(block, year, doy, diff) %>% 
+  group_by(year, doy) %>% 
+  summarise(diff = mean(diff)) %>% 
+  ggplot(aes(doy, diff)) +
+  geom_point() +
+  geom_hline(yintercept = 0)
+
+
+# try 2019 ----------------------------------------------------------------
+
+sw15_19 <- 
+  sw15 %>% 
+  filter(year == 2019) %>% 
+  filter(!is.na(value))
+
+ggplot(data = sw15_19) + 
+  geom_line(aes(x = doy, y = value, group = plot_id, color = plot_id)) +
+  facet_wrap( ~ year + rot_trt)
+
+
+#--using trt_block_year, like miranda
+mod_19 <- gam(value ~ s(doy, by = trt_block_year, bs = "cr", k = 50) + trt_block_year,
+            data = sw15_19, method = "REML")
+
+plot(mod_19, residuals = TRUE, shade = TRUE)
+par(mar = c(4, 4, 3, 0))
+mgcv::gam.check(mod_19)
+
+#--see predictions
+sw15_19$p <- predict(mod_19)
+
+ggplot(data = sw15_19) +
+  geom_line(aes(x = doy, y = p, color = rot_trt, group = plot_id)) + # note p^2
+  facet_wrap( ~ year, ncol = 2) 
+
+ggplot(data = sw15_19) + 
+  geom_line(aes(x = doy, y = value, group = plot_id), color = "red") +
+  geom_line(aes(x = doy, y = p, group = plot_id), color = "black") + 
+  facet_wrap( ~ year + rot_trt)
+
+
+#--what if I scale things?
+sw15_19
+
+# diffs between trts ------------------------------------------------------
+
+base_str_19 <- as.vector(sapply(unique(sw15_19$block), function(s) {
+  paste(s, unique(sw15_19$year), sep = "_")
+}))
+
+
+# get all combinations of year/doy
+#base_str2 <- as.vector(unique(myd$year_doy))
+
+base_str2_19 <- as.vector(unique(sw15_19$year))
+
+# add trt to the front of each base str, yielding pairwise df
+var_df_19 <- data.frame(var1 = paste("2y", base_str_19, sep = "_"),
+                     var2 = paste("4y", base_str_19, sep = "_"),
+                     stringsAsFactors = FALSE)
+
+head(var_df_19)
+
+var_df2_19 <- data.frame(var1 = paste("2y", base_str2_19, sep = "_"),
+                      var2 = paste("4y", base_str2_19, sep = "_"),
+                      stringsAsFactors = FALSE)
+
+var_df2
+
+#Next, we create a data frame for prediction that contains the depth values and levels of `trt_block_yr`.
+# So I want doy and levels of trt_block_year, but actually plot_id is fine for that
+
+# newdata <- expand.grid(depth_cm = unique(myd$depth_cm),
+#                         trt_block_yr = levels(myd$trt_block_yr))
+
+newdata_19 <- expand.grid(doy = unique(sw15_19$doy),
+                       trt_block_year = levels(sw15_19$trt_block_year))
+
+head(newdata_19)
+
+# but this works. Ugh what am I missing. 
+out_19 <- purrr::map_dfr(1:nrow(var_df_19), function(i) {
+  d <- smooth_diff(mod_19, newdata_19, 
+                   f1 = var_df_19[i,1], f2 = var_df_19[i,2], 
+                   var = "trt_block_year")
+  d$pair <- as.character(d$pair) # prevent map_dfr from combining factors
+  return(d)
+})
+
+comp_19 <- cbind(doy = unique(sw15_19$doy), out_19) # add depth values
+comp_19$pair <- as.factor(comp_19$pair) # make this a factor again for ggplot2
+head(comp_19)
+
+
+#Now, we can plot the difference between treatments, with associated confidence bands, for each block and year/doy combination. Any depth values where the shading does not cross the dashed red line (at diff = 0) are points where the treatment resistances differ significantly.
+
+ggplot(comp_19, aes(x = doy, y = diff, group = pair)) +
+  geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.2) +
+  geom_line() +
+  geom_hline(aes(yintercept = 0), colour="#990000", linetype="dashed") +
+  facet_wrap(~ pair, ncol = 2) 
+
+ggplot(comp, aes(x = depth_cm, y = diff, group = pair)) +
+  geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.2) +
+  geom_line() +
+  geom_hline(aes(yintercept = 0), colour="#990000", linetype="dashed") +
+  facet_wrap(~ pair, ncol = 2) +
+  labs(x = NULL, y = 'Difference in resis_Mpa trend') +
+  ggtitle("Difference in resis_Mpa trend", subtitle = "Sqrt scale")
+
+
+# play a fanfare noise when everything is done running
+beepr::beep(3)
+
+
+#--get a list of depths that have sig diffs
+
+comp2 %>% 
+  as_tibble() %>%
+  mutate(t2yH = ifelse(lower > 0, 1, 0),
+         t4yH = ifelse(upper < 0, 1, 0),
+         trtsig = t2yH + t4yH) %>%
+  mutate(diffneg = ifelse(diff < 0, -1, 1),
+         diff2 = diff2*diffneg) %>% 
+  filter(trtsig != 0) %>% 
   separate(pair, into = c("p1", "p2"), sep = "-") %>% 
   separate(p1, into = c("trt", "block", "year", "doy")) %>% 
-  group_by(depth_cm, year, doy) %>% 
-  summarise(t2yH = sum(t2yH),
-            t4yH = sum(t4yH),
-            trt = t2yH + t4yH,
-         trt.col = ifelse(trt >0, "happymatt", "sadmatt")) %>% 
-  ggplot() + 
-  # geom_col(aes(x = depth_cm, y = t2yH), fill = "green4") +
-  # geom_col(aes(x = depth_cm, y = t4yH), fill = "red4") +
-  geom_col(aes(x = depth_cm, y = trt, fill = trt.col)) +
-  coord_flip() + 
-  scale_x_reverse() + 
-  facet_wrap(~year + doy)
+  select(block, year, doy, depth_cm, diff, diff2) %>% 
+  group_by(year, doy, depth_cm) %>% 
+  summarise(diff2 = mean(diff2)) %>% 
+  ggplot(aes(diff2, depth_cm)) + 
+  geom_hline(yintercept = 10, linetype = "dashed") +
+  geom_hline(yintercept = 30, linetype = "dashed") +
+  geom_point(aes(color = interaction(year, doy))) + 
+  scale_y_reverse() 
 
-#-can I add 'windows' where the differences are significant?
 
-ggplot(data = myd) +
-  geom_line(aes(x = depth_cm, y = p^2, group = trt_block_yr, color = rot_trt)) + # note p^2
-  facet_wrap( ~ year_doy, ncol = 2) 
+comp %>% 
+  as_tibble() %>%
+  mutate(t2yH = ifelse(lower > 0, 1, 0),
+         t4yH = ifelse(upper < 0, 1, 0),
+         trtsig = t2yH + t4yH)  %>% 
+  filter(trtsig != 0) %>% 
+  separate(pair, into = c("p1", "p2"), sep = "-") %>% 
+  separate(p1, into = c("trt", "block", "year")) %>% 
+  select(block, year, doy, diff) %>% 
+  group_by(year, doy) %>% 
+  summarise(diff = mean(diff)) %>% 
+  ggplot(aes(doy, diff)) +
+  geom_point() +
+  geom_hline(yintercept = 0)
+
+
 
