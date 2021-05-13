@@ -50,6 +50,13 @@ ggplot(data = rawdat) +
   labs(title = "raw sensor values")
 
 
+rawdat %>% 
+  group_by(doy, year, sensor_depth_cm, rot_trt) %>% 
+  summarise(value = mean(value, na.rm = T)) %>% 
+  ggplot(aes(doy, value)) + 
+  geom_line(aes(color = rot_trt)) + 
+  facet_grid(sensor_depth_cm~year)
+
 # calc differences by block -----------------------------------------------
 
 #--wait, I'm missing some plots, so not every block would have a comparison...
@@ -569,4 +576,79 @@ res_d45y19 %>%
   facet_grid(.~type)
 
 
+
+
+
+# XXX window of sig -------------------------------------------------------
+
+#-2018
+
+res_d15y18 %>% 
+  ggplot(aes(doy, diff)) + 
+  geom_line() + 
+  geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.5) + 
+  geom_hline(yintercept = 0) + 
+  facet_grid(.~type)
+
+
+sigL <- 
+  res_d15y18 %>%
+  filter(type == "raw vals") %>% 
+  mutate(sigL = ifelse(upper < 0, "sigL", NA)) %>% 
+  filter(!is.na(sigL))
+
+
+sigH <- 
+  res_d15y18 %>% 
+  filter(type == "raw vals") %>% 
+  mutate(sigH = ifelse(lower > 0, "sigH", NA)) %>% 
+  filter(!is.na(sigH))
+
+
+rawdat %>%
+  filter(year == 2018, sensor_depth_cm == 15) %>% 
+  group_by(doy, year, sensor_depth_cm, rot_trt, block) %>% 
+  summarise(value = mean(value, na.rm = T)) %>% 
+  ggplot(aes(doy, value, group = interaction(block, rot_trt))) + 
+  geom_vline(data= sigL, aes(xintercept = doy), color = "red", alpha = 0.5) +
+  geom_vline(data= sigH, aes(xintercept = doy), color = "blue", alpha = 0.5) +
+  geom_line(aes(color = rot_trt), size = 3) + 
+  facet_grid(sensor_depth_cm~year)
+
+
+
+
+#--2019
+
+res_d15y19 %>% 
+  ggplot(aes(doy, diff)) + 
+  geom_line() + 
+  geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.5) + 
+  geom_hline(yintercept = 0) + 
+  facet_grid(.~type)
+
+
+sigL <- 
+  res_d15y19 %>% 
+  filter(type == "sqrt vals") %>% 
+  mutate(sigL = ifelse(upper < 0, "sigL", NA)) %>% 
+  filter(!is.na(sigL))
+
+
+sigH <- 
+  res_d15y19 %>% 
+  filter(type == "sqrt vals") %>% 
+  mutate(sigH = ifelse(lower > 0, "sigH", NA)) %>% 
+  filter(!is.na(sigH))
+
+
+rawdat %>%
+  filter(year == 2019, sensor_depth_cm == 15) %>% 
+  group_by(doy, year, sensor_depth_cm, rot_trt, block) %>% 
+  summarise(value = mean(value, na.rm = T)) %>% 
+  ggplot(aes(doy, value, group = interaction(block, rot_trt))) + 
+  geom_vline(data= sigL, aes(xintercept = doy), color = "red", alpha = 0.5) +
+  geom_vline(data= sigH, aes(xintercept = doy), color = "blue", alpha = 0.5) +
+  geom_line(aes(color = rot_trt), size = 3) + 
+  facet_grid(sensor_depth_cm~year)
 
