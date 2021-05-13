@@ -95,12 +95,22 @@ library(mgcv)
 
 #--need separate data frame for predicting
 
-sw15_18 <- 
+sw_d15y18 <- 
   sw_f %>% 
   filter(year == 2018, sensor_depth_cm == 15, !is.na(value))
 
 mod15_18 <- gam(value_sc2 ~ s(doy, by = plot_id, bs = "cr", k = 70) + plot_id,
            data = sw_d15y18, method = "REML")
+
+#--if I think block matters, then do a pairwise analysis on the difference
+#--2y - 4y for each block
+#--then model THOSE curves for each rot_trt
+
+#--if I don't think block matters, then just fit a GAM  w/rot_trt 
+
+#--fit it to each treatment (at least 2 curves) - make a factor with 8 levels
+mod15_18 <- gam(value_sc2 ~ s(doy, by = rot_trt, bs = "cr", k = 70) + rot_trt,
+                data = sw_d15y18, method = "REML")
 
 plot(mod15_18, residuals = TRUE, shade = TRUE)
 par(mar = c(4, 4, 3, 0))
@@ -118,10 +128,12 @@ mgcv::gam.check(mod15_18)
 # In this case, the `edf` values are not too close to 7, and the `k-index` is close to 1, but the p-values are a bit low for my taste. This is likely due to the heteroskedastic residuals (i.e., megaphone shape), because the curves are all close to zero at zero depth but spread out a lot for higher depths.
 # 
 
-# view the 24 fitted curves to visually inspect differences
-sw15_18$p <- predict(mod15_18)
+#--try doing the square root transformation (or log) (sqrt is a milder correction)
 
-ggplot(data = sw15_18) +
+# view the 24 fitted curves to visually inspect differences
+sw_d15y18$p <- predict(mod15_18)
+
+ggplot(data = sw_d15y18) +
   geom_line(aes(x = doy, y = value_sc2, color = rot_trt, group = plot_id)) +
   geom_line(aes(x = doy, y = p, color = rot_trt, group = plot_id), size = 3) + 
   facet_wrap( ~ year, ncol = 2) 

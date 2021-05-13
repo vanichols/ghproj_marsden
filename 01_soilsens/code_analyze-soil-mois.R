@@ -530,7 +530,7 @@ ggplot(comp_19, aes(x = doy, y = diff, group = pair)) +
   geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.2) +
   geom_line() +
   geom_hline(aes(yintercept = 0), colour="#990000", linetype="dashed") +
-  facet_wrap(~ pair, ncol = 2) 
+  facet_wrap(~ pair, ncol = 2, scales = "free") 
 
 ggplot(comp, aes(x = depth_cm, y = diff, group = pair)) +
   geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.2) +
