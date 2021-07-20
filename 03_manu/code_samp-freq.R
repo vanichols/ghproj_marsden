@@ -7,7 +7,14 @@ library(tidyverse)
 library(janitor)
 library(saapsim)
 
-theme_set(theme_bw())
+
+#--get planting date
+pd <- mrs_rootdepth %>% 
+  ungroup() %>% 
+  filter(rootdepth_cm == 0) %>% 
+  select(year, date) %>% 
+  distinct() %>% 
+  rename("planting_date" = date)
 
 
 # biomass freq ------------------------------------------------------------
@@ -32,15 +39,6 @@ mrs_rootdepth %>%
   distinct() %>% 
   group_by(year) %>% 
   tally() 
-
-
-#--get planting date
-pd <- mrs_rootdepth %>% 
-  ungroup() %>% 
-  filter(rootdepth_cm == 0) %>% 
-  select(year, date) %>% 
-  distinct() %>% 
-  rename("planting_date" = date)
 
 
 #--starting sampling (dap)
@@ -69,6 +67,23 @@ mrs_rootdepth %>%
 
   
 
-# soil moist --------------------------------------------------------------
+
+# penetrom ----------------------------------------------------------------
 
 
+mrs_penetrom %>% 
+  ungroup() %>% 
+  left_join(pd) %>% 
+  select(year, date, planting_date) %>% 
+  mutate(dap = as.numeric(date - planting_date)) %>% 
+  select(year, dap) %>% 
+  distinct()
+
+
+mrs_penetrom %>% 
+  ungroup() %>% 
+  select(depth_cm) %>% 
+  summary()
+
+
+45/2.54
