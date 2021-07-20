@@ -29,6 +29,12 @@ dat <-
   ungroup() 
 
 dat %>% 
+  group_by(year, block, rot_trt) %>% 
+  tally() %>% 
+  filter(block == "b1",
+         rot_trt == "2y")
+
+dat %>% 
   ggplot(aes(doy, mass_gpl)) + 
   geom_point(aes(color = rot_trt),size = 3) + 
   scale_color_grafify() +
