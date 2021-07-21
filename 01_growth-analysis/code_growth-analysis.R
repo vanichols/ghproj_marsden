@@ -1,6 +1,6 @@
 # try to do growth analysis
 # started 1/15/2021
-# updated:
+# updated: 7/21/2021, trying to work through it again...
 
 #remotes::install_github("ashenoy-cmbi/grafify@*release", dependencies = T) 
 library(maRsden)
@@ -37,7 +37,6 @@ dat %>%
 dat %>% 
   ggplot(aes(doy, mass_gpl)) + 
   geom_point(aes(color = rot_trt),size = 3) + 
-  scale_color_grafify() +
   facet_grid(.~year)
 
 mod_dat <- 
@@ -49,7 +48,6 @@ mod_dat <-
 mod_dat %>%
   ggplot(aes(doy, mass_gpl, color = rot_trt)) + 
   geom_point(size = 4) + 
-  scale_color_grafify() +
   facet_grid(.~yearF) + 
   labs(title = "observations")
 
@@ -88,6 +86,7 @@ mrs_cornbio_wo %>% select(organ) %>% distinct()
 
 will_hi <- 
   mrs_cornbio_wo %>%
+  select(year, everything()) %>% 
   select(year:mass_g) %>% 
   group_by(year) %>% 
   filter(doy == max(doy)) %>% 
@@ -102,6 +101,18 @@ will_hi %>%
   geom_point() + 
   facet_grid(.~year)
 
+hi <- 
+  gina_hi %>% 
+  bind_rows(will_hi) 
+
+hi %>% 
+  ggplot(aes(rot_trt, hi)) + 
+  geom_point() + 
+  facet_grid(.~year)
+
+hi %>% 
+  select(year, date, doy, plot_id, hi) %>% 
+  write_csv("01_growth-analysis/dat_harvest-indices.csv")
 
 
 # individual model fitting -----------------------------------------------------------
@@ -160,10 +171,10 @@ prd_dat <-
 
 prd_dat %>%
   ggplot(aes(doy, mpreds, color = rot_trt)) + 
-  geom_line(size = 2) + 
   geom_point(data = mod_dat,
              aes(doy, mass_gpl, color = rot_trt),
-             alpha = 0.4, size = 4) +
+             alpha = 0.2, size = 4) +
+  geom_line(size = 2) + 
   facet_grid(.~yearF) + 
   scale_color_grafify() +
   labs(title = "logistic fit",
@@ -185,7 +196,7 @@ prd_dat %>%
        y = "Biomass per plant (g)")
 
 
-# beta fit ----------------------------------------------------------------
+# beta fit, sucks----------------------------------------------------------------
 
 #--test
 t.bgf <- nls(mass_gpl ~ SSbgf(doy, w.max, t.e, t.m),
@@ -227,7 +238,19 @@ dat_deriv <-
                                  scal = scal,
                                  doy = doy)) 
 
-#--all of them
+
+
+#--write growth results
+dat_deriv %>% 
+  left_join(prd_dat) %>% 
+  filter(!is.na(mpreds)) %>%
+  mutate(rel_gr = abs_gr/mpreds) %>% 
+  rename("mass_gpl" = mpreds) %>% 
+  select(yearF, rot_trt, doy, mass_gpl, abs_gr, rel_gr) %>% 
+  write_csv("01_growth-analysis/dat_growth-analysis.csv")
+
+
+#--look all of them
 dat_deriv %>% 
   left_join(prd_dat) %>% 
   filter(!is.na(mpreds)) %>%
@@ -235,7 +258,7 @@ dat_deriv %>%
   rename("mass_gpl" = mpreds) %>% 
   pivot_longer(abs_gr:rel_gr) %>% 
   mutate(name = factor(name, levels = c("mass_gpl", "abs_gr", "rel_gr"))) %>%   ggplot(aes(doy, value, color = rot_trt, group = name)) + 
-  stat_summary(fun = "mean", geom = "line", aes(color = rot_trt, group = rot_trt), size = 2) +
+  stat_summary(fun = "mean", geom = "line", aes(color = rot_trt, group = rot_trt), size = 1.1) +
   scale_color_grafify() +
   facet_grid(name~yearF, scales = "free")
 
@@ -293,7 +316,7 @@ dat_deriv %>%
             aes(x = 250, y = 1, label = hi, color = rot_trt)) +
   geom_text(data = hi_dat %>% filter(rot_trt == "4y"),
             aes(x = 250, y = 10, label = hi, color = rot_trt)) +
-    scale_color_grafify() +
+  scale_color_grafify() +
   scale_y_log10() +
   labs(y = "log-scale",
        title = "abs_gr = grams per plant per day",
@@ -304,7 +327,7 @@ dat_deriv %>%
 
 ggsave("01_growth-analysis/fig_fe_log-scale.png")
 
-# rue ---------------------------------------------------------------------
+# rue, sucks ---------------------------------------------------------------------
 
 dat_deriv
 
@@ -319,7 +342,7 @@ mrs_cornlai %>%
   left_join(mrs_plotkey) %>% 
   ggplot(aes(doy, lai_cm2pl)) + 
   geom_point(aes(color = rot_trt)) +
-  scale_color_grafify() +
+   
   facet_grid(.~year)
 
 rue %>% 
@@ -334,12 +357,12 @@ rue %>%
   geom_point(size = 3) + 
   geom_line() +
   geom_hline(yintercept = 1, linetype = "dashed") +
-  scale_color_grafify() +
+   
   facet_grid(.~year) + 
   labs(y = "Ratio of 4yr RUE to 2 yr RUE",
        title = "Ratio of 4yr to 2yr rotation RUE is always > 1")
   
-ggsave("01_growth-analysis/fig_rue-ratio.png")
+#ggsave("01_growth-analysis/fig_rue-ratio.png")
 
 
 
@@ -372,7 +395,6 @@ d1 <-
   ggplot(aes(doy, value, color = rot_trt, group = name)) + 
   stat_summary(fun = "mean", geom = "line", aes(color = rot_trt, group = rot_trt), size = 2) +
   scale_color_grafify() +
-  
   facet_grid(name~yearF, scales = "free")
 
 d2 <- 
@@ -387,7 +409,7 @@ d2 <-
   facet_grid(.~year)
 
 library(patchwork)
-d1/d2
+d2/d1
 
 ggsave("01_growth-analysis/fig_fe-growth-analysis_yields.png")
 
@@ -400,7 +422,7 @@ mrs_krnl500 %>%
   stat_summary(geom = "point", size = 4) + 
   stat_summary(geom = "errorbar", width = 0.5) +
   #geom_jitter(size = 4, width = 0.2) +
-  scale_color_grafify() +
+   
   facet_grid(.~year, scales = "free") + 
   labs(x = NULL, y = "Weight of 500 kernals (g)") + 
   theme(axis.title = element_text(size = rel(1.3)),
@@ -419,7 +441,7 @@ mrs_earrows %>%
   #stat_summary(geom = "point") + 
   #stat_summary(geom = "errorbar", width = 0.5) +
   geom_jitter() +
-  scale_color_grafify() +
+   
   facet_grid(name~year, scales = "free")
 
 

@@ -1,6 +1,6 @@
 ## fit a logistic to each eu
 # started July 20 2021
-# ugh
+# ugh. finished july 21 2021. Fit to each trt/year, not each rep.
 
 
 library(tidyverse)
@@ -50,157 +50,41 @@ rd_mod <-
 
 nls_logis <- function(dat){
   res <- coef(nls(rootdepth_cm ~ SSlogis(cum_gdd, Asym, xmid, scal), data = dat))
+  
+  res2 <- tibble(param = names(res),
+         value = as.numeric(res))
+  return(res2)
+  
 }
 
 
 
 #--test on one
-coef(nls_logis(filter(rd_mod, eu == "2018_2y"))) %>% 
+(nls_logis(filter(rd_mod, eu == "2018_2y"))) 
 
 
-#--map function to data
-leach_aic <-
-  leach %>%
+#--map function to each eu data
+logis_rd <-
+  rd_mod %>%
   group_by(eu) %>% 
-  nest(data = c(value, nrate_kgha, yearF)) %>%
+  nest(data = c(cum_gdd, rootdepth_cm)) %>%
   mutate(
-    blin = data %>% map(possibly(aic_blin, NULL)),
-    expf = data %>% map(possibly(aic_expf, NULL)),
-    explin = data %>% map(possibly(aic_explin, NULL)),
-    is_null = blin %>% map_lgl(is.null)
+    mod_fit = data %>% map(possibly(nls_logis, NULL)),
+   # is_null = mod_fit %>% map_lgl(is.null)
   ) %>% 
-  filter(is_null == 0) %>%  
-  unnest(cols = c(blin, expf, explin)) 
-
-
-
-
-#--use cum_gdd
-rd_maxG <- groupedData(rootdepth_cm ~ cum_gdd | plot_id, data = na.omit(rd_max))
-
-plot(rd_maxG)
-
-
-## Fit model to each individual curve
-fitL <- nlsLMList(rootdepth_cm ~ SSlogis(cum_gdd, Asym, xmid, scal), data = rd_maxG)
-
-plot(fitL)
-
-fm0 <- nlme(fitL, random = pdDiag(Asym + xmid + scal ~ 1))
-
-plot(fm0)
-
-## Incorporate the effect of rotation
-fxf <- fixef(fm0)
-## Update model
-fm1 <- update(fm0, 
-              fixed = Asym + xmid + scal ~ rotation,
-              start = c(fxf[1], 0, fxf[2], 0, fxf[3], 0))
-
-# how to specify fixed effects? Look at the order...
-fm1a <- update(fm0,
-               fixed = list(Asym ~  rotation + mean_elev_m,
-                            xmid + scal ~ rotation),
-               start = c(fxf[1], 0, 0, # asym
-                         fxf[2], 0, 
-                         fxf[3], 0))
-
-
-anova(fm1a) ## Not much of an effect?
-
-fm2 <- update(fm1, random = list(year.f = pdDiag(Asym + xmid + scal ~ 1),
-                                 plot_id = pdDiag(Asym + xmid + scal ~ 1)),
-              groups = ~year.f/plot_id)
-
-anova(fm2)
-## The year accounts for most of the variability
-## We do not need this effect at the level of plot for xmid and scal
-fm2
-## Simpler model
-fm3 <- update(fm2, random = list(year.f = pdDiag(Asym + xmid + scal ~ 1),
-                                 plot_id = pdDiag(Asym ~ 1)),
-              groups = ~year.f/plot_id)
-
-# data --------------------------------------------------------------------
-
-dat <- 
-  read_csv("01_proc-raw-outs/pro_apdat.csv") %>% 
-  arrange(site_id, year, nrate_kgha) %>%
-  mutate(yearF = as.factor(year),
-         rotation = dplyr::recode(rotation,                                                                "sc" = "cs")) %>% 
-  mutate(eu = paste0(site_id,"_", year, rotation)) %>% #--add an eu identifier
-  mutate(site_id = as.factor(site_id),
-         rotation = as.factor(rotation)) %>% 
-  filter(!is.na(nyear_leach_kgha_tot)) %>% 
-  select(eu, site_id, rotation, yearF, crop, nrate_kgha, nyear_leach_kgha_tot, yield_maize_buac)
-
-
-dat %>% 
-  select(eu) %>% 
-  distinct() %>% 
-  tally()
-
-unique(dat$site_id)
-
-# leach -------------------------------------------------------------------
-
-leach <- 
-  dat %>% 
-  select(eu, everything()) %>% 
-  rename("leaching_kgha" = nyear_leach_kgha_tot) %>% 
-  pivot_longer(leaching_kgha:yield_maize_buac) %>%
-  filter(name == "leaching_kgha")
-
-#--build functions
-
-aic_blin <- function(x){
-  AIC(nls(value ~ SSblin(nrate_kgha, a, b, xs, c), data = x))
-}
-
-
-aic_expf <- function(x){
-  AIC(nls(value ~ SSexpf(nrate_kgha, a, c), data = x))
-}
-
-aic_explin <- function(x){
-  AIC(nlsLM(value ~ SSexplin(nrate_kgha, cm, rm, tb), data = x))
-}
-
-#--test on one
-aic_blin(filter(leach, eu == "gent_2000cc"))
-
-
-#--map function to data
-leach_aic <-
-  leach %>%
-  group_by(eu) %>% 
-  nest(data = c(value, nrate_kgha, yearF)) %>%
-  mutate(
-    blin = data %>% map(possibly(aic_blin, NULL)),
-    expf = data %>% map(possibly(aic_expf, NULL)),
-    explin = data %>% map(possibly(aic_explin, NULL)),
-    is_null = blin %>% map_lgl(is.null)
-  ) %>% 
-  filter(is_null == 0) %>%  
-  unnest(cols = c(blin, expf, explin)) 
-
-leach_aic %>% 
-  filter(is_null == "TRUE")
-
-leach_aic %>%
-  select(eu, blin, expf, explin) %>% 
-  pivot_longer(blin:explin) %>% 
-  ggplot(aes(eu, value)) +
-  geom_point(aes(color = name))
-
-#--what % is blin best? etc
-leach_aic %>%
-  select(eu, blin, expf, explin) %>% 
-  pivot_longer(blin:explin) %>% 
-  group_by(eu) %>% 
-  mutate(min = min(value)) %>% 
-  filter(value == min) %>%
+  #filter(is_null == 0) %>%  
+  unnest(cols = c(mod_fit)) %>% 
+  left_join(mrs_plotkey %>% mutate(eu = paste(year, rot_trt, sep = "_"))) %>% 
   ungroup() %>% 
-  summarise(blinT = sum(ifelse(name == "blin", 1, 0))/n(),
-            expfT = sum(ifelse(name == "expf", 1, 0))/n(),
-            explinT = sum(ifelse(name == "explin", 1, 0))/n())
+  select(year, rot_trt, value, param) %>% 
+  distinct() 
+
+logis_rd %>% 
+  write_csv("01_rootdepth/dat_nls-parameters-eu.csv")
+
+
+logis_rd %>% 
+  ggplot(aes(param, value, color = rot_trt)) + 
+  geom_point()
+
+

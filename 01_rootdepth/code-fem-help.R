@@ -15,10 +15,10 @@ library(emmeans)
 ## Analyze Ordonez data first
 ro <- read_csv("gina-proj/ordonez-figdata.csv")
 
-ro %>% 
-  ggplot(aes(dap, rootdepth_cm)) + 
+ro %>%
+  ggplot(aes(dap, rootdepth_cm)) +
   geom_point(size = 3, alpha = 0.5) +
-  labs(title= "Data From Ordonez et al. 2018",
+  labs(title = "Data From Ordonez et al. 2018",
        x = "Days After Planting",
        y = "Root Depth (cm)")
 
