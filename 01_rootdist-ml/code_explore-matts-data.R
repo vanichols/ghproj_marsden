@@ -14,6 +14,7 @@ library(maRsden)
 #   arrange(date, block, rot_trt) %>% 
 #   write_csv("01_rootdist-ml/dat_matt-compare.csv")
 
+#--note, eliminate plot 22 on day XX
 
 rm <- 
   mrs_rootdist_mlsum %>% 
@@ -25,13 +26,24 @@ rm <-
   filter(!is.na(minmax_x)) %>% 
   left_join(mrs_plotkey)
 
+mrs_rootdist_mlsum %>% 
+  left_join(mrs_plotkey) %>% 
+  ggplot(aes(dap, roots_kgha, group = plot_id)) + 
+  geom_line(aes(color = rot_trt)) + 
+  facet_grid(.~year)
+
 rm_add <- 
   rm %>% 
   select(year, block, rot_trt, minmax_x, roots_kgha) %>% 
   pivot_wider(names_from = minmax_x, values_from = roots_kgha) %>% 
-  mutate(roots_added = end - beg)
+  mutate(roots_added_kgha = end - beg)
 
 rm_add %>% write_csv("01_rootdist-ml/dat_roots-added.csv")
+
+rm_add %>% 
+  group_by(year, rot_trt) %>% 
+  summarise(mean_roots_added_kgha = mean(roots_added_kgha, na.rm = T)) %>% 
+  write_csv("01_rootdist-ml/dat_roots-added-means.csv")
 
 #--lot of error
 rm_add %>% 
