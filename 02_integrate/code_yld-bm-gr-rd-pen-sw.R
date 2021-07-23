@@ -14,7 +14,9 @@ theme_set(theme_bw())
 
 # data --------------------------------------------------------------------
 
-all_years <- tibble(year = c(2013, 2014, 2018, 2019, 2020))
+my_years <- c(2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020)
+my_years2 <- c(2013, 2014, 2018, 2019, 2020)
+all_years <- tibble(year = my_years2)
 all_trts <- tibble(rot_trt = c("2y", "4y"))
 
 #--bm over time, growth over time
@@ -47,6 +49,7 @@ ylds <-
   left_join(mrs_plotkey) %>% 
   filter(harv_crop != "C3") %>% 
   filter(year %in% c(2013, 2014, 2018, 2019, 2020)) %>% 
+  #filter(year %in% my_years) %>%
   select(year, rot_trt, block, yield_Mgha) %>% 
   rename("value" = yield_Mgha) %>% 
   mutate(name = "Grain yield")
@@ -66,11 +69,46 @@ radd <-
   rename("value" = roots_added_kgha) %>% 
   mutate(name = "Roots added over season")
 
+#--penet resis
+pr <- 
+  mrs_penetrom %>% 
+  left_join(mrs_plotkey) %>% 
+  group_by(year, doy, depth_cm, rot_trt) %>% 
+  summarise(resis_kpa = mean(resis_kpa, na.rm = T)) %>% 
+  rename("value" = resis_kpa) %>% 
+  mutate(name = "Penetration resistance")
 
+
+sm <- 
+  mrs_soilsensors %>% 
+  filter(sensor_unit == "soilVWC",
+         sensor_depth_cm == 15) %>% 
+    left_join(mrs_plotkey) %>% 
+    group_by(year, doy, rot_trt) %>% 
+    summarise(value = mean(value, na.rm = T)) %>% 
+  mutate(name = "Soil moisture")
 
 
 
 # ylds --------------------------------------------------------------------
+
+#--figure out which years were sig diff
+mod_ylds <- 
+  lmer(value ~ rot_trt*yearF + (1|block:yearF), data = ylds %>% 
+       mutate(yearF = as.factor(year)))
+
+em_ylds <- emmeans(mod_ylds, specs = c("rot_trt", "yearF"))
+
+#--literally only 2018...
+pairs(em_ylds, specs = c("rot_trt", "yearF")) %>% 
+  as.data.frame() %>% 
+  separate(contrast, sep = "-", into = c("v1", "v2")) %>%   mutate(v1 = str_trim(v1),
+         v2 = str_trim(v2)) %>% 
+  separate(v1, sep = " ", into = c("rot1", "yr1")) %>% 
+  separate(v2, sep = " ", into = c("rot2", "yr2")) %>% 
+  filter(rot1 != rot2) %>% 
+  filter(yr1 == yr2)
+
 
 star_dat_yld <- 
   all_years %>% 
@@ -83,24 +121,27 @@ star_dat_yld <-
 
 f_ylds <- 
   ylds %>% 
-  ggplot(aes(rot_trt, value, fill = rot_trt, color = rot_trt)) + 
-  stat_summary(geom = "bar", width = 0.5) + 
-  #stat_summary(geom = "linerange") +
-  geom_text(data = star_dat_yld, 
-            aes(x = rot_trt, y = 13, label = star),
-            size = 8,
-            hjust = 1, 
-            color = "black",
-            check_overlap = T) +
+    mutate(thing = "A") %>% 
+    pivot_wider(names_from = rot_trt, values_from = value) %>% 
+    clean_names() %>% 
+    group_by(year, name, thing) %>% 
+    summarise_if(is.numeric, mean, na.rm = T) %>% 
+  ggplot() + 
+    geom_segment(aes(x = thing, xend = thing,
+                     y = x2y, yend = x4y)) +
+    geom_point(aes(thing, x4y), color = dkbl1, size = 3) + 
+    geom_point(aes(thing, x2y), color = pnk1, size = 3) +
   facet_grid(name ~ year, labeller = label_wrap_gen(width = 10)) + 
   scale_fill_manual(values = c(pnk1, dkbl1),
                     labels = c("Simple 2-year", "Complex 4-year")) + 
   scale_color_manual(values = c(pnk1, dkbl1)) + 
-  scale_y_continuous(limits = c(0, 16)) +
+#  scale_y_continuous(limits = c(0, 16)) +
+  scale_y_continuous(expand = expansion(add = 0.5)) +
   labs(x = NULL,
        y = "Mg ha-1",
        fill = "Rotation") +
   theme(axis.text.x = element_blank(), 
+        axis.ticks.x = element_blank(),
         legend.position = "bottom",
         legend.background = element_rect(color = "black")) + 
   guides(color = F) 
@@ -119,12 +160,16 @@ f_bm <-
   ggplot(aes(doy, value, color = rot_trt)) + 
   geom_line() +
   facet_grid(name ~ year, labeller = label_wrap_gen(width = 10)) + 
-  scale_color_manual(values = c(pnk1, dkbl1)) +
+  scale_color_manual(values = c(pnk1, dkbl1),
+                    labels = c("Simple 2-year", "Complex 4-year")) + 
   labs(x = NULL,
-       y = "grams\nplant-1") +
-  theme(strip.text.x = element_blank(),
-        axis.text.x = element_blank())+ 
-  guides(fill = F, color = F)
+       y = "grams\nplant-1",
+       color = "Rotation") + 
+  theme(axis.text.x = element_blank(), 
+                                     legend.position = "bottom",
+                                     legend.background = element_rect(color = "black"), 
+        strip.text.x = element_blank()) + 
+  guides(fill = F)
 
 f_bm
 
@@ -138,7 +183,8 @@ f_gr <-
   ggplot(aes(doy, value, color = rot_trt)) + 
   geom_line() +
   facet_grid(name ~ year, labeller = label_wrap_gen(width = 10)) + 
-  scale_color_manual(values = c(pnk1, dkbl1)) +
+  scale_color_manual(values = c(pnk1, dkbl1),
+                    labels = c("Simple 2-year", "Complex 4-year")) + 
   labs(x = "Day of year", 
        y = "grams\nplant-1 day-1") +
   theme(strip.text.x = element_blank()) + 
@@ -180,15 +226,15 @@ f_yc <-
   fill(name, .direction = "up") %>% 
   ggplot(aes(rot_trt, value, color = rot_trt)) + 
   stat_summary(geom = "point", pch = 15, size = 4) + 
-  geom_text(data = star_dat_yc, 
-            aes(x = rot_trt, y = 190, label = star),
-            size = 9,
-            hjust = 1, 
-            color = "black", 
-            check_overlap = T) +
+  # geom_text(data = star_dat_yc, 
+  #           aes(x = rot_trt, y = 190, label = star),
+  #           size = 9,
+  #           hjust = 1, 
+  #           color = "black", 
+  #           check_overlap = T) +
   facet_grid(name ~ year, labeller = label_wrap_gen(width = 15)) + 
   scale_color_manual(values = c(pnk1, dkbl1)) + 
-  scale_y_continuous(limits = c(140, 200)) +
+#  scale_y_continuous(limits = c(140, 200)) +
   labs(x = NULL,
        y = "grams") +
   theme(axis.text.x = element_blank(),
@@ -231,7 +277,7 @@ f_rd <-
   facet_grid(name ~ year, labeller = label_wrap_gen(width = 15)) + 
   scale_color_manual(values = c(pnk1, dkbl1)) +
   labs(x = NULL,
-       y = "cm") +
+       y = "Depth (cm)") +
   theme(axis.text.x = element_blank(),
         strip.text.x = element_blank()) + 
   guides(fill = F, color = F)
@@ -270,9 +316,80 @@ f_radd <-
 
 f_radd
 
+# penetration resistance -------------------------------------------------------------
+
+f_resis <- 
+  all_years %>%
+  #crossing(all_trts) %>% 
+  left_join(pr %>% 
+              group_by(year) %>% 
+              filter(doy == min(doy))) %>%
+  fill(name, .direction = "up") %>% 
+  ggplot(aes(depth_cm, value, 
+             fill = rot_trt, color= rot_trt)) + 
+  geom_line() +
+  facet_grid(name ~ year, labeller = label_wrap_gen(width = 15)) + 
+  scale_fill_manual(values = c(pnk1, dkbl1)) + 
+  scale_color_manual(values = c(pnk1, dkbl1)) + 
+  labs(x = "Depth (cm)",
+       y = "kPa") +
+  theme(#axis.text.x = element_blank(),
+        strip.text.x = element_blank()) + 
+  guides(fill = F, color = F) + 
+  coord_flip() + 
+  scale_y_continuous(breaks = c(0, 1000, 2000)) + 
+  scale_x_reverse()
+
+
+f_resis
+
+# soil moisture -------------------------------------------------------------
+
+#f_resis <- 
+  all_years %>%
+  #crossing(all_trts) %>% 
+  left_join(sm) %>%
+  fill(name, .direction = "up") %>% 
+  ggplot(aes(depth_cm, value, 
+             fill = rot_trt, color= rot_trt)) + 
+  geom_line() +
+  facet_grid(name ~ year, labeller = label_wrap_gen(width = 15)) + 
+  scale_fill_manual(values = c(pnk1, dkbl1)) + 
+  scale_color_manual(values = c(pnk1, dkbl1)) + 
+  labs(x = "Depth (cm)",
+       y = "kPa") +
+  theme(#axis.text.x = element_blank(),
+    strip.text.x = element_blank()) + 
+  guides(fill = F, color = F) + 
+  coord_flip() + 
+  scale_y_continuous(breaks = c(0, 1000, 2000)) + 
+  scale_x_reverse()
+
+
+f_resis
+
+
 # patchwork... ------------------------------------------------------------
 
-f_ylds / f_bm / f_gr / f_yc / f_rd / f_radd + 
+
+#--put all together
+f_ylds / f_bm / f_gr / f_yc /  f_rd / f_radd / f_resis + 
   plot_layout(guides = "collect") & theme(legend.position = "bottom")
 
-ggsave("02_integrate/fig_all.png", width = 6.6, height = 7.8)
+#ggsave("02_integrate/fig_all.png")
+ggsave("02_integrate/fig_all.png", width = 5.5, height = 8.9)
+
+
+
+#--separate the plots?
+f_ylds / f_yc + f_bm / f_gr +
+  plot_layout(guides = "collect",
+              heights = c(1, 1, 1.75, 1.75)) & theme(legend.position = "top")
+
+ggsave("02_integrate/fig_yld-bm-gr.png", 
+       width = 7.4, height = 5.7)
+
+
+f_yc / f_resis / f_rd / f_radd + 
+  plot_layout(guides = "collect") & theme(legend.position = "bottom")
+
