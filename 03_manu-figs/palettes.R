@@ -23,3 +23,11 @@ show_col(c(rd2, bl2, pr2, ylw2, dkpr2, ltrd2))
 
 #--choose this i guess
 show_col(colours = c(dkbl1, grn1, ylw1, pnk1, ltbl1, dkpnk1))
+
+
+# labels ------------------------------------------------------------------
+
+myyieldlab <- (expression(atop("Dry grain yield", paste("(Mg "~ha^-1*")"))))
+
+mymeanyieldlab <- (expression(atop("Mean grain yield", paste("(Mg "~ha^-1*")"))))
+
