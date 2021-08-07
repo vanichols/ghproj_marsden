@@ -1,7 +1,8 @@
 #--weather years
 #--created aug 7 2021
+#---currently using mesonet 2020 data that hasn't been qc'd by sotirios
 
-
+rm(list = ls())
 library(maRsden)
 library(tidyverse)
 library(janitor)
@@ -17,10 +18,25 @@ myth <-
       axis.text = element_text(size = rel(1.1)))
 
 
-# long term wea calcs -----------------------------------------------------
+
+# precip ------------------------------------------------------------------
 
 #--cumultive precip
-pcum_lt <- 
+
+#--total precip
+ptot <- 
+  mrs_wea %>% 
+  filter(day < 366) %>% 
+  group_by(year)  %>% 
+  summarise(tp = sum(rain_mm, na.rm = T)) 
+
+#--long term mean total
+ptot_longterm <- 
+  ptot %>% 
+  summarise(tp = mean(tp)) %>% 
+  pull(tp)
+
+pcum_longterm <- 
   mrs_wea %>% 
   filter(day < 366) %>% 
   group_by(year)  %>% 
@@ -28,21 +44,10 @@ pcum_lt <-
   group_by(day) %>% 
   summarise(cp = mean(cp, na.rm = T)) 
 
-#--total precip
-pt_lt <- 
-  mrs_wea %>% 
-  filter(day < 366) %>% 
-  group_by(year)  %>% 
-  summarise(tp = sum(rain_mm, na.rm = T)) 
-
-
-pt_longterm <- 
-  pt_lt %>% 
-  summarise(tp = mean(tp)) %>% 
-  pull(tp)
+# temperature -------------------------------------------------------------
 
 #--avg temp
-tav_lt <- 
+tav <- 
   mrs_wea %>% 
   filter(day < 366) %>% 
   mutate(tav = (maxt_c + mint_c)/2) %>% 
@@ -50,9 +55,11 @@ tav_lt <-
   summarise(tav = mean(tav, na.rm = T)) 
 
 tav_longterm <- 
-  tav_lt %>% 
+  tav %>% 
   summarise(tav = mean(tav)) %>% 
   pull(tav)
+
+
 # my years ----------------------------------------------------------------
 yyrs <- c(2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020)
 bioyrs <- c(2013, 2014, 2018, 2019, 2020)
@@ -62,7 +69,34 @@ ryrs <- c(2018, 2019, 2020)
 
 
 
-# precip ------------------------------------------------------------------
+# weather for different data years ----------------------------------------
+
+ptot_dat <- 
+  ptot %>% 
+  filter(year > 2012) %>% 
+  mutate(yield_dat = ifelse(year %in% yyrs, "Yield data", NA),
+         root_dat = ifelse(year %in% ryrs, "root data", NA),
+         bio_dat = ifelse(year %in% bioyrs, "growth analysis", NA)) %>% 
+  unite(yield_dat, bio_dat, root_dat, col = "msmt", sep = ", ") %>% 
+  mutate(msmt = str_squish(msmt),
+         msmt = str_remove_all(msmt, "NA, "),
+         msmt = str_remove_all(msmt, ", NA"))
+
+
+
+# xy plot -----------------------------------------------------------------
+
+ptot_dat %>%
+  left_join(tav) %>%
+  ggplot(aes(tp, tav)) +
+  geom_point(aes(shape = msmt, color = msmt), size = 5) +
+  geom_hline(yintercept = tav_longterm) +
+  geom_vline(xintercept = ptot_longterm) +
+  scale_color_manual(values = c("Yield data" = "gray60",
+                                dkpr2, dkpr2)) + 
+  scale_shape_manual(values = c("Yield data" = 19,
+                                15, 17))
+
 
 #--cum
 pcum_y <- 
