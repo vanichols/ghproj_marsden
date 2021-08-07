@@ -85,6 +85,7 @@ ptot_dat <-
 
 
 # xy plot -----------------------------------------------------------------
+library(ggrepel)
 
 ptot_dat %>%
   left_join(tav) %>%
@@ -92,6 +93,7 @@ ptot_dat %>%
   geom_point(aes(shape = msmt, color = msmt), size = 5) +
   geom_hline(yintercept = tav_longterm) +
   geom_vline(xintercept = ptot_longterm) +
+  geom_text_repel(aes(label = year)) +
   scale_color_manual(values = c("Yield data" = "gray60",
                                 dkpr2, dkpr2)) + 
   scale_shape_manual(values = c("Yield data" = 19,
