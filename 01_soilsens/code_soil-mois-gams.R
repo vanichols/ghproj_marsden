@@ -2,6 +2,7 @@
 # Purpose: Analyze soil moisture data
 # Updated: 5/11/2021, Walk Miranda through problem, incorporate her suggestions
 
+#--this is old, I believe. Use soil-mois-gams-fem
 
 # My questions:
 # Should I scale the soil moisture data?
@@ -18,6 +19,7 @@ library(purrr)
 library(dplyr)
 library(tidyr)
 library(ggplot2)
+library(readr)
 
 #--scale and center
 scale_this <- function(x){

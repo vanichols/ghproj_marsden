@@ -87,17 +87,83 @@ ptot_dat <-
 # xy plot -----------------------------------------------------------------
 library(ggrepel)
 
+yld_diffs <- 
+  mrs_cornylds %>% 
+  filter(year %in% yyrs) %>% 
+  filter(rot_trt != "3y") %>% 
+  group_by(year, rot_trt) %>% 
+  summarise(yld = mean(yield_Mgha, na.rm = T)) %>% 
+  pivot_wider(names_from = rot_trt, values_from = yld) %>% 
+  janitor::clean_names() %>% 
+  mutate(yld_diff = x4y - x2y)
+
 ptot_dat %>%
   left_join(tav) %>%
+  left_join(yld_diffs) %>% 
   ggplot(aes(tp, tav)) +
-  geom_point(aes(shape = msmt, color = msmt), size = 5) +
-  geom_hline(yintercept = tav_longterm) +
-  geom_vline(xintercept = ptot_longterm) +
+  geom_hline(yintercept = tav_longterm, linetype = "dashed") +
+  geom_vline(xintercept = ptot_longterm, linetype = "dashed") +
+  geom_point(aes(color = msmt, size = yld_diff)) +
+  geom_text(aes(x = 610, y = 10.85, label = "Hot and dry"), 
+            color = "gray70", fontface = "italic", check_overlap = T) +
+  geom_text(aes(x = 1200, y = 8.4, label = "Cool and wet"), 
+            color = "gray70", fontface = "italic", check_overlap = T) +
   geom_text_repel(aes(label = year)) +
   scale_color_manual(values = c("Yield data" = "gray60",
-                                dkpr2, dkpr2)) + 
-  scale_shape_manual(values = c("Yield data" = 19,
-                                15, 17))
+                                ltrd2, dkpnk1)) + 
+  labs(size = expression("Yield advantage of complex rotation ("~Mg~ha^-1*")"),
+       #size = (expression(atop("Yield advantage\nof complex rotation", paste("(Mg "~ha^-1*")")))),
+         color = "Measurement set",
+       x = "Total precipitation (mm)",
+       y = expression("Mean air temperature ("*~degree*C*")")) + 
+  theme(legend.position = "top",
+        legend.direction = "vertical",
+        legend.background = element_rect(color = "black"),
+        legend.title.align = 0.5,
+        legend.title = element_text(size = rel(1))) + 
+  guides(size=guide_legend(direction='horizontal',
+                           title.position = "top"))
+
+ggsave("03_manu-figs/fig_wea.png", width = 7.39, height = 5.67)
+
+
+
+# get rid of size legend --------------------------------------------------
+
+ptot_dat %>%
+  left_join(tav) %>%
+  left_join(yld_diffs) %>% 
+  ggplot(aes(tp, tav)) +
+  geom_hline(yintercept = tav_longterm, linetype = "dashed") +
+  geom_vline(xintercept = ptot_longterm, linetype = "dashed") +
+  geom_point(aes(color = msmt, size = yld_diff)) +
+  geom_text(aes(x = 675, y = 10.85, label = "Hot and dry"), 
+            color = "gray70", fontface = "italic", check_overlap = T) +
+  geom_text(aes(x = 1150, y = 8.4, label = "Cool and wet"), 
+            color = "gray70", fontface = "italic", check_overlap = T) +
+  geom_text_repel(aes(label = year)) +
+  scale_color_manual(values = c("Yield data" = "gray60",
+                                ltrd2, dkpnk1)) + 
+  guides(size = F) +
+  labs(size = expression("Yield advantage of complex rotation ("~Mg~ha^-1*")"),
+       #size = (expression(atop("Yield advantage\nof complex rotation", paste("(Mg "~ha^-1*")")))),
+       color = "Measurement set",
+       x = "Total precipitation (mm)",
+       y = expression("Mean air temperature ("*~degree*C*")")) + 
+  theme(legend.position = "top",
+        legend.direction = "vertical",
+        legend.background = element_rect(color = "black"),
+        legend.title.align = 0.5,
+        legend.title = element_text(size = rel(1))) #+ 
+  # guides(size=guide_legend(direction='horizontal',
+  #                          title.position = "top"))
+
+ggsave("03_manu-figs/fig_wea.png", width = 3.7, height = 4.7)
+
+
+
+
+# old ---------------------------------------------------------------------
 
 
 #--cum
