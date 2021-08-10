@@ -101,8 +101,8 @@ ptot_dat %>%
   left_join(tav) %>%
   left_join(yld_diffs) %>% 
   ggplot(aes(tp, tav)) +
-  geom_hline(yintercept = tav_longterm, linetype = "dashed") +
-  geom_vline(xintercept = ptot_longterm, linetype = "dashed") +
+  geom_hline(yintercept = tav_longterm, linetype = "dashed", color = "gray70") +
+  geom_vline(xintercept = ptot_longterm, linetype = "dashed", color = "gray70") +
   geom_point(aes(color = msmt, size = yld_diff)) +
   geom_text(aes(x = 610, y = 10.85, label = "Hot and dry"), 
             color = "gray70", fontface = "italic", check_overlap = T) +
@@ -129,13 +129,13 @@ ggsave("03_manu-figs/fig_wea.png", width = 7.39, height = 5.67)
 
 
 # get rid of size legend --------------------------------------------------
-
+set.seed(123)
 ptot_dat %>%
   left_join(tav) %>%
   left_join(yld_diffs) %>% 
   ggplot(aes(tp, tav)) +
-  geom_hline(yintercept = tav_longterm, linetype = "dashed") +
-  geom_vline(xintercept = ptot_longterm, linetype = "dashed") +
+  geom_hline(yintercept = tav_longterm, linetype = "dashed", color = "gray70") +
+  geom_vline(xintercept = ptot_longterm, linetype = "dashed", color = "gray70") +
   geom_point(aes(color = msmt, size = yld_diff)) +
   geom_text(aes(x = 675, y = 10.85, label = "Hot and dry"), 
             color = "gray70", fontface = "italic", check_overlap = T) +
@@ -154,7 +154,8 @@ ptot_dat %>%
         legend.direction = "vertical",
         legend.background = element_rect(color = "black"),
         legend.title.align = 0.5,
-        legend.title = element_text(size = rel(1))) #+ 
+        legend.title = element_text(size = rel(1)),
+        panel.grid = element_blank()) #+ 
   # guides(size=guide_legend(direction='horizontal',
   #                          title.position = "top"))
 

@@ -14,35 +14,6 @@ library(emmeans)
 
 #--note, eliminate plot 22 on day XX
 
-#--there is something wrong?
-radd <- 
-  read_csv("01_rootdist-ml/dat_roots-added.csv") %>%
-  select(year, block, rot_trt, beg, end) %>% 
-  pivot_longer(beg:end) %>% 
-  mutate(year = paste0("Y", year))
-
-#--why is it singular fit?
-m1 <- lmer(value ~ rot_trt*year*name + (1|block), data = radd)
-m1a <- lm(value ~ rot_trt*year*name, data = radd)
-anova(m1, m1a) #--wtf does that mean
-
-anova(m1a)
-
-#em1 <- emmeans(m1, specs = c("rot_trt", "name")) #--same as below
-em1 <- emmeans(m1, specs = ~rot_trt:name)
-contrast(em1, method = "pairwise")
-
-em2 <- emmeans(m1, specs = ~name|rot_trt)
-
-em2 %>% 
-  broom::tidy() %>% 
-  write_csv("01_rootdist-ml/dat_em-beg-end.csv")
-
-
-contrast(em2, method = "pairwise") %>% 
-  broom::tidy() %>% 
-  write_csv("01_rootdist-ml/dat_em-change.csv")
-
 
 # matt stats --------------------------------------------------------------
 
@@ -71,63 +42,111 @@ rm_depth <-
 
 
 #--include depth as a thing
-m2 <- lmer(value ~ yearF*depth*rot_trt*name + (1|block), 
+m2 <- lmer(value ~ yearF*depth*rot_trt*samp_time + (1|block), 
            data = rm_depth %>% 
              select(-roots_added_kgha) %>% 
-             pivot_longer(beg:end))
+             pivot_longer(beg:end, names_to = "samp_time"))
 summary(m2)
 
 anova(m2)
 
 #--separated by year
-emmeans(m2, specs = c("yearF", "rot_trt", "name")) %>% 
+emmeans(m2, specs = c("yearF", "rot_trt", "samp_time")) %>% 
   broom::tidy() %>% 
-  mutate(name2 = ifelse(name == "beg", 1, 2)) %>% 
-  ggplot(aes(name2, estimate)) + 
+  mutate(samp_time2 = ifelse(samp_time == "beg", 1, 2)) %>% 
+  ggplot(aes(samp_time2, estimate)) + 
   geom_point(aes(color = rot_trt)) + 
   geom_line(aes(color = rot_trt)) + 
   facet_grid(.~yearF)
 
 #--not separated
-emmeans(m2, specs = c("rot_trt", "name")) %>% 
+emmeans(m2, specs = c("rot_trt", "samp_time")) %>% 
   broom::tidy() %>% 
-  mutate(name2 = ifelse(name == "beg", 1, 2)) %>% 
-  ggplot(aes(name2, estimate)) + 
+  mutate(samp_time2 = ifelse(samp_time == "beg", 1, 2)) %>% 
+  ggplot(aes(samp_time2, estimate)) + 
   geom_point(aes(color = rot_trt)) + 
   geom_line(aes(color = rot_trt)) 
 
+#--separated by depth THIS IS THE WINNER
+emmeans(m2, specs = c("depth", "rot_trt", "samp_time")) %>% 
+  broom::tidy() %>% 
+  mutate(samp_time2 = ifelse(samp_time == "beg", 1, 2)) %>% 
+  ggplot(aes(samp_time2, estimate)) + 
+  geom_point(aes(color = rot_trt)) + 
+  geom_line(aes(color = rot_trt)) + 
+  facet_grid(.~depth)
 
-#--use the sum over all depths
-m3 <- lmer(value ~ yearF*depth*rot_trt*name + (1|block), 
+#--this one makes the most sense to me. 
+emmeans(m2, specs = c("depth", "rot_trt", "samp_time")) %>% 
+  broom::tidy() %>% 
+  write_csv("01_rootdist-ml/dat_em-beg-end-by-depth.csv")
+
+
+#--use the sum over all depths?
+m3 <- lmer(value ~ yearF*rot_trt*samp_time + (1|block), 
            data = rm_depth %>% 
-             select(-roots_added_kgha) %>% 
-             pivot_longer(beg:end))
+             group_by(yearF, plot_id, block, rot_trt) %>% 
+             summarise(beg = sum(beg, na.rm =T),
+                       end = sum(end, na.rm = T)) %>% 
+             pivot_longer(beg:end, names_to = "samp_time"))
 summary(m3)
 
 anova(m3)
 
 #--separated by year
-emmeans(m3, specs = c("yearF", "rot_trt", "name")) %>% 
+emmeans(m3, specs = c("yearF", "rot_trt", "samp_time")) %>% 
   broom::tidy() %>% 
-  mutate(name2 = ifelse(name == "beg", 1, 2)) %>% 
-  ggplot(aes(name2, estimate)) + 
+  mutate(samp_time2 = ifelse(samp_time == "beg", 1, 2)) %>% 
+  ggplot(aes(samp_time2, estimate)) + 
   geom_point(aes(color = rot_trt)) + 
   geom_line(aes(color = rot_trt)) + 
   facet_grid(.~yearF)
 
 #--not separated
-emmeans(m3, specs = c("rot_trt", "name")) %>% 
+emmeans(m3, specs = c("rot_trt", "samp_time")) %>% 
   broom::tidy() %>% 
-  mutate(name2 = ifelse(name == "beg", 1, 2)) %>% 
-  ggplot(aes(name2, estimate)) + 
+  mutate(samp_time2 = ifelse(samp_time == "beg", 1, 2)) %>% 
+  ggplot(aes(samp_time2, estimate)) + 
   geom_point(aes(color = rot_trt)) + 
   geom_line(aes(color = rot_trt)) 
 
 
 #--not separated, without depth
-emmeans(m1, specs = c("rot_trt", "name")) %>% 
+emmeans(m1, specs = c("rot_trt", "samp_time")) %>% 
   broom::tidy() %>% 
-  mutate(name2 = ifelse(name == "beg", 1, 2)) %>% 
-  ggplot(aes(name2, estimate)) + 
+  mutate(samp_time2 = ifelse(samp_time == "beg", 1, 2)) %>% 
+  ggplot(aes(samp_time2, estimate)) + 
   geom_point(aes(color = rot_trt)) + 
   geom_line(aes(color = rot_trt)) 
+
+
+#--there is something wrong?
+radd <- 
+  read_csv("01_rootdist-ml/dat_roots-added.csv") %>%
+  select(year, block, rot_trt, beg, end) %>% 
+  pivot_longer(beg:end, names_to = "samp_time") %>% 
+  mutate(year = paste0("Y", year))
+
+#--why is it singular fit?
+m1 <- lmer(value ~ rot_trt*year*samp_time + (1|block), data = radd) #--wtf?
+m1a <- lm(value ~ rot_trt*year*samp_time, data = radd)
+anova(m1, m1a) #--wtf does that mean
+
+anova(m1a) #--use the one that doesn't bark
+#anova(m1) #-basically the same anyways
+
+#em1 <- emmeans(m1, specs = c("rot_trt", "samp_time")) #--same as below
+em1 <- emmeans(m1, specs = ~rot_trt:samp_time)
+contrast(em1, method = "pairwise")
+
+em2 <- emmeans(m1, specs = ~samp_time|rot_trt)
+
+em2 %>% 
+  broom::tidy() %>% 
+  write_csv("01_rootdist-ml/dat_em-beg-end.csv")
+
+
+contrast(em2, method = "pairwise") %>% 
+  broom::tidy() %>% 
+  write_csv("01_rootdist-ml/dat_em-change.csv")
+

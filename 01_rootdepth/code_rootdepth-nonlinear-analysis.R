@@ -192,6 +192,10 @@ rd_maxG$prd1 <- apply(sim1, 1, median)
 rd_maxG$lwr1 <- apply(sim1, 1, quantile, probs = 0.05)
 rd_maxG$upr1 <- apply(sim1, 1, quantile, probs = 0.95)
 
+rd_maxG %>% 
+  as_tibble() %>% 
+  write_csv("01_rootdepth/dat_nlraa-preds-for-fig.csv")
+
 ggplot(rd_maxG, aes(x = cum_gdd, y = rootdepth_cm, color = rotation)) + 
   facet_wrap(~ year.f) + 
   geom_point() + 
