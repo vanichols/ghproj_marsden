@@ -39,9 +39,45 @@ rm_depth <-
   mutate(roots_added_kgha = end - beg,
          yearF = as.factor(year)) 
 
+rm_depth
 
 
-#--include depth as a thing
+#--include depth as a thing, use roots_added as resp var
+m1 <- lmer(roots_added_kgha ~ yearF*depth*rot_trt + (1|block), 
+           data = rm_depth)
+anova(m1) #--depth x rot effect
+
+#--added at each depth
+em1 <- emmeans(m1, specs = c("rot_trt", "depth")) 
+
+em1 %>% 
+  broom::tidy() %>% 
+  write_csv("01_rootdist-ml/dat_em-change-depth.csv")
+
+pairs(em1) %>% 
+  broom::tidy() %>% 
+  separate(contrast, into = c("t1", "t2"), sep = " - ") %>% 
+  separate(t1, into = c("rot1", "d1"), sep = " ") %>% 
+  separate(t2, into = c("rot2", "d2"), sep = " ") %>% 
+  filter(rot1 != rot2,
+         d1 == d2) %>% 
+  write_csv("01_rootdist-ml/dat_sig-change-depth.csv")
+
+#--get an estimate ignoring depth
+rm_tot <- 
+  rm_depth %>% 
+  group_by(year, block, rot_trt, yearF) %>% 
+  summarise(roots_added_kgha = sum(roots_added_kgha, na.rm = T))
+
+m2 <- lm(roots_added_kgha ~ rot_trt*yearF, data = rm_tot)
+anova(m2)
+em2 <- emmeans(m2, specs = c("rot_trt")) #--ugh. nothing is sig
+em2 %>% 
+  broom::tidy() %>% 
+  write_csv("01_rootdist-ml/dat_sig-change-total.csv")
+
+
+#--include depth as a thing, samp_time
 m2 <- lmer(value ~ yearF*depth*rot_trt*samp_time + (1|block), 
            data = rm_depth %>% 
              select(-roots_added_kgha) %>% 

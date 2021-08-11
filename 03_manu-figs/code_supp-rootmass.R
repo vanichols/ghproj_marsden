@@ -13,6 +13,48 @@ source("03_manu-figs/palettes.R")
 
 theme_set(theme_bw())
 
+
+# use stats on diff -------------------------------------------------------
+
+rad <- read_csv("01_rootdist-ml/dat_em-change-depth.csv")
+rad_tot <- read_csv("01_rootdist-ml/dat_sig-change-total.csv") %>% 
+  mutate(depth = "Total\n0-60cm")
+
+bind_rows(rad_tot, rad) %>% 
+  mutate(rot_trt = ifelse(rot_trt == "2y", "Simple", "Complex"),
+       rot_trt = factor(rot_trt, levels = c("Simple", "Complex")),
+       depth = fct_inorder(depth)) %>% 
+  ggplot(aes(rot_trt, estimate)) + 
+  geom_col(aes(fill = rot_trt), color= "black") +
+  geom_linerange(aes(x = rot_trt, ymin = estimate - std.error, 
+                     ymax = estimate + std.error)) +
+  scale_color_manual(values = c(pnk1, dkbl1),
+                     labels = c("Simple", "Complex")) + 
+  scale_fill_manual(values = c(pnk1, dkbl1),
+                    labels = c("Simple", "Complex")) + 
+  guides(fill = F, color = F) +
+  labs(x = NULL,
+       y = expression("Root mass added ("~kg~ha^-1*")"), 
+       color = "Rotation",
+       fill = "Rotation") +
+  facet_grid(.~depth) + 
+  theme(panel.grid.major.x = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        #axis.text.x = element_blank(), 
+        #axis.ticks.x = element_blank(),
+        legend.position = "top",
+        legend.background = element_rect(color = "black"),
+        legend.title = element_text(size = rel(1.2)),
+        legend.text = element_text(size = rel(1.1)),
+        strip.text = element_text(size = rel(1.2)),
+        strip.background = element_blank())
+
+ggsave("03_manu-figs/fig_rootmass.png", width = 7.98, height = 5.11)
+
+
+# calc diff ---------------------------------------------------------------
+
+
 rm <- read_csv("01_rootdist-ml/dat_em-beg-end-by-depth.csv")
 
 rm_added <- 
