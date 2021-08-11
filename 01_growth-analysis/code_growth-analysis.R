@@ -127,23 +127,66 @@ mod_coefs <-
   unnest(cols = c(mtib)) %>% 
   select(-data, -mfit, -mcoef)
 
+#--conf ints?
+mod_dat %>% 
+  group_by(yearF, rot_trt) %>% 
+  nest() %>% 
+  mutate(mfit = data %>% map(~nls(mass_gpl ~ SSlogis(doy, Asym, xmid, scal), data = .)),
+         mcoef = mfit %>% map(confint),
+         mtib = mcoef %>% map(broom::tidy)) %>% 
+  unnest(cols = c(mtib)) %>% 
+  select(-data, -mfit, -mcoef)
+
+mod_coefs %>% 
+  pivot_wider(names_from = names,
+              values_from = x) %>% 
+  select(yearF, everything()) %>% 
+  arrange(yearF, rot_trt) 
+
 a <- nls(mass_gpl ~ SSlogis(doy, Asym, xmid, scal), data = mod_dat %>% filter(yearF == "2013", rot_trt == "4y"))
 
 coef(a)
 confint(a) %>% as.data.frame() %>% rownames_to_column() %>%  as_tibble()
 
+params <- 
+  confint(a) %>% 
+  as.data.frame() %>% 
+  rownames_to_column() %>%  
+  as_tibble() %>% 
+  select(rowname) %>% 
+  pull() %>% 
+  as.vector()
+
 #--this is hard, maybe not worth it...
-# mod_coefs_int <- 
-#   mod_dat %>% 
-#   group_by(yearF, rot_trt) %>% 
-#   nest() %>% 
-#   mutate(mfit = data %>% map(~nls(mass_gpl ~ SSlogis(doy, Asym, xmid, scal), data = .)),
-#          mconf = mfit %>% map(possibly(confint, NULL))) %>% 
-#   filter(!is.null(mconf)),
-#          mdf = mconf %>% map(as.data.frame)) %>% 
-#            map(rownames_to_column) %>%
-#            map(as_tibble)) %>% 
-#   unnest(cols = c(mtib)) 
+mod_coefs_int <-
+  mod_dat %>%
+  group_by(yearF, rot_trt) %>%
+  nest() %>%
+  mutate(mfit = data %>% map(~nls(mass_gpl ~ SSlogis(doy, Asym, xmid, scal), data = .)),
+         mconf = mfit %>% map(possibly(confint, NULL))) %>%
+  filter(!is.null(mconf)) %>% 
+  mutate( mdf = mconf %>% map(as.data.frame))
+
+length(rep(params, 10))
+myparams <- (rep(params, 10))
+
+
+mod_coefs_int %>% 
+  select(rot_trt, yearF, mdf) %>% 
+  unnest(mdf) %>% 
+  as_tibble() %>% 
+  mutate(names = myparams) %>% 
+  left_join(mod_coefs) %>% 
+  janitor::clean_names() %>% 
+  rename("parameter" = names,
+         "value" = x,
+         "lo95" = x2_5_percent,
+         "hi95" = x97_5_percent) %>% 
+  select(year_f, rot_trt, parameter, value, lo95, hi95) %>% 
+  arrange(year_f, rot_trt, parameter) %>% 
+  mutate_if(is.numeric, round, 1) %>% 
+  write_csv("01_growth-analysis/dat_growth-anal-params-eu.csv")
+
 
 
 mod_coefs %>% 
