@@ -117,6 +117,28 @@ emmeans(m2, specs = c("depth", "rot_trt", "samp_time")) %>%
   broom::tidy() %>% 
   write_csv("01_rootdist-ml/dat_em-beg-end-by-depth.csv")
 
+#--include depth as a thing, samp_time, but use log transf
+m2b <- lmer(log(value) ~ yearF*depth*rot_trt*samp_time + (1|block), 
+           data = rm_depth %>% 
+             select(-roots_added_kgha) %>% 
+             pivot_longer(beg:end, names_to = "samp_time"))
+anova(m2b)
+
+#--separated by depth THIS IS THE WINNER
+emmeans(m2b, specs = c("depth", "rot_trt", "samp_time")) %>% 
+  broom::tidy() %>% 
+  mutate(samp_time2 = ifelse(samp_time == "beg", 1, 2)) %>% 
+  ggplot(aes(samp_time2, estimate)) + 
+  geom_point(aes(color = rot_trt)) + 
+  geom_line(aes(color = rot_trt)) + 
+  facet_grid(.~depth)
+
+em_m2b <- emmeans(m2b, specs = c("depth", "rot_trt", "samp_time")) 
+
+contrast(em_m2b, method = "pairwise") %>%
+  broom::tidy() %>% 
+  separate(contrast, into = c("c1", "c2"), sep = " - ") %>% 
+  filter((grepl("beg", c1) & grepl("end")))
 
 #--use the sum over all depths?
 m3 <- lmer(value ~ yearF*rot_trt*samp_time + (1|block), 
@@ -128,6 +150,7 @@ m3 <- lmer(value ~ yearF*rot_trt*samp_time + (1|block),
 summary(m3)
 
 anova(m3)
+
 
 #--separated by year
 emmeans(m3, specs = c("yearF", "rot_trt", "samp_time")) %>% 
