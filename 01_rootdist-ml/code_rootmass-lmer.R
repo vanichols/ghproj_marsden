@@ -42,6 +42,8 @@ rm_depth <-
 rm_depth
 
 
+# depth -------------------------------------------------------------------
+
 #--include depth as a thing, use roots_added as resp var
 m1 <- lmer(roots_added_kgha ~ yearF*depth*rot_trt + (1|block), 
            data = rm_depth)
@@ -76,6 +78,8 @@ em2 %>%
   broom::tidy() %>% 
   write_csv("01_rootdist-ml/dat_sig-change-total.csv")
 
+
+# depth, sample time ------------------------------------------------------
 
 #--include depth as a thing, samp_time
 m2 <- lmer(value ~ yearF*depth*rot_trt*samp_time + (1|block), 
@@ -117,6 +121,9 @@ emmeans(m2, specs = c("depth", "rot_trt", "samp_time")) %>%
   broom::tidy() %>% 
   write_csv("01_rootdist-ml/dat_em-beg-end-by-depth.csv")
 
+
+# depth, samp time, log transform -----------------------------------------
+
 #--include depth as a thing, samp_time, but use log transf
 m2b <- lmer(log(value) ~ yearF*depth*rot_trt*samp_time + (1|block), 
            data = rm_depth %>% 
@@ -133,12 +140,43 @@ emmeans(m2b, specs = c("depth", "rot_trt", "samp_time")) %>%
   geom_line(aes(color = rot_trt)) + 
   facet_grid(.~depth)
 
-em_m2b <- emmeans(m2b, specs = c("depth", "rot_trt", "samp_time")) 
+emmeans(m2b, specs = c("depth", "rot_trt", "samp_time")) 
 
-contrast(em_m2b, method = "pairwise") %>%
+
+
+# depth, samp time, DIFF ---------------------------------------
+m3 <- lmer(roots_added_kgha ~ yearF*depth*rot_trt + (1|block), 
+            data = rm_depth)
+anova(m3)
+
+em_m3 <- emmeans(m3, specs = c("depth", "rot_trt")) 
+  
+contrast(em_m3, method = "pairwise") %>% 
   broom::tidy() %>% 
   separate(contrast, into = c("c1", "c2"), sep = " - ") %>% 
-  filter((grepl("beg", c1) & grepl("end")))
+  separate(c1, into = c("d1", "r1"), sep = " ") %>% 
+  separate(c2, into = c("d2", "r2"), sep = " ") %>% 
+  filter(d1 == d2) %>% 
+  select(term, d1, r1, r2, estimate, std.error, df, adj.p.value)
+
+#--this is not what Matt is getting. He says it is because I am testing things against one error term, he is using another. 
+m3b <- lmer(roots_added_kgha ~ yearF*depth*rot_trt + (1|block:yearF) + (1|block:rot_trt), 
+           data = rm_depth)
+anova(m3b)
+em_m3b <- emmeans(m3b, specs = c("depth", "rot_trt")) 
+
+contrast(em_m3b, method = "pairwise") %>% 
+  broom::tidy() %>%
+  separate(contrast, into = c("c1", "c2"), sep = " - ") %>% 
+  separate(c1, into = c("d1", "r1"), sep = " ") %>% 
+  separate(c2, into = c("d2", "r2"), sep = " ") %>% 
+  filter(d1 == d2) %>% 
+  select(term, d1, r1, r2, estimate, std.error, df, adj.p.value)
+
+
+
+rm_depth %>% 
+  arrange(year, block, rot_trt, depth)
 
 #--use the sum over all depths?
 m3 <- lmer(value ~ yearF*rot_trt*samp_time + (1|block), 
