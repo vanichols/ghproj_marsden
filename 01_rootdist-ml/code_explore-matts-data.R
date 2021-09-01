@@ -16,7 +16,95 @@ library(maRsden)
 #   arrange(date, block, rot_trt) %>% 
 #   write_csv("01_rootdist-ml/dat_matt-compare.csv")
 
-#--note, eliminate plot 22 on day XX
+#--note, eliminate 2020 plot 22 on last day (NAs)
+
+
+# diffs between each sampling point ---------------------------------------
+
+#--relabel dap as 1st 2nd 3rd dap etc.
+dap_ids <- 
+  mrs_rootdist_ml %>% 
+  select(year, dap) %>% 
+  distinct() %>% 
+  group_by(year) %>% 
+  mutate(n = 1:n(),
+         dap_id = paste0("s", n)) %>% 
+  select(year, dap, dap_id) %>% 
+  ungroup()
+  
+#--which one is the stinker? plot 2020_41, dap 4, 0-15cm has 1827 kgha
+mrs_rootdist_ml %>% 
+  group_by(year) %>% 
+  filter(dap == min(dap)) %>% 
+  filter(depth == "0-15cm")
+  
+mrs_rootdist_ml %>% 
+  left_join(mrs_plotkey) %>% 
+  ggplot(aes(dap, roots_kgha, group = plot_id, color = rot_trt)) + 
+  geom_point() + 
+  geom_line() + 
+  facet_grid(depth ~ year)
+
+#--calc diffs between each sampling
+gap_dat <- 
+  mrs_rootdist_ml %>% 
+  left_join(dap_ids) %>% 
+  select(year, dap_id, depth, plot_id, roots_kgha) %>% 
+  pivot_wider(names_from = dap_id, values_from = roots_kgha) %>% 
+  mutate(gap1 = s2 - s1,
+         gap2 = s3 - s2, 
+         gap3 = s4 - s3,
+         gap4 = s5 - s4,
+         gap5 = s6 - s5) %>% 
+  select(year:plot_id, contains("gap")) %>% 
+  pivot_longer(gap1:gap5) %>% 
+  filter(!is.na(value)) %>% 
+  left_join(mrs_plotkey) %>% 
+  distinct() %>% 
+  mutate(year = paste0("Y", year)) 
+
+#--jiiter plot, not super useful
+gap_dat %>% 
+  ggplot(aes(depth, value)) + 
+  geom_jitter(aes(color = rot_trt))
+
+#--having hard time imaging, turn it over
+gap_dat %>% 
+  ggplot(aes(depth, value)) + 
+  geom_violin(aes(fill = rot_trt), width = 0.5) + 
+  geom_hline(yintercept = 0) +
+  facet_grid(.~year)
+
+#--violin plot
+gap_dat %>% 
+  mutate(depth = fct_inorder(depth),
+         depth = fct_rev(depth)) %>% 
+  ggplot(aes(depth, value)) + 
+  geom_violin(aes(fill = rot_trt), width = 0.75) + 
+  geom_hline(yintercept = 0) +
+  coord_flip() +
+  facet_grid(.~year) + 
+  labs(title = "Change in roots from one sampling to next",
+       subtitle = "+ = inc, - = dec")
+
+#--boxplot
+gap_dat %>% 
+  mutate(depth = fct_inorder(depth),
+         depth = fct_rev(depth)) %>% 
+  ggplot(aes(depth, value)) + 
+  geom_boxplot(aes(fill = rot_trt), width = 0.75) + 
+  geom_hline(yintercept = 0) +
+  coord_flip() +
+  facet_grid(.~year) + 
+  labs(title = "Change in roots from one sampling to next",
+       subtitle = "+ = inc, - = dec")
+
+#--nothign is significant
+library(lme4)
+library(lmerTest)
+m1 <- lmer(value ~ depth*rot_trt + (1|block:year), data = gap_dat)
+anova(m1)
+summary(m1)
 
 rm_sum <- 
   mrs_rootdist_mlsum %>% 
