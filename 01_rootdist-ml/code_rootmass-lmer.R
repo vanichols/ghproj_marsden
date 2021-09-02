@@ -12,7 +12,7 @@ library(lme4)
 library(lmerTest)
 library(emmeans)
 
-#--note, eliminate plot 22 on day XX
+#--note, eliminate 2020 plot 22 on day XX
 
 
 # matt stats --------------------------------------------------------------
@@ -22,6 +22,20 @@ library(lme4)
 library(lmerTest)
 library(emmeans)
 
+p22 <- 
+  mrs_rootdist_ml %>% 
+  filter(plot_id == "2020_22")
+
+mrs_rootdist_ml %>% 
+  left_join(mrs_plotkey) %>% 
+  ggplot(aes(dap, roots_kgha, group = plot_id, color = rot_trt)) + 
+  geom_point() + 
+  geom_line() + 
+  facet_grid(depth ~ year, scales = "free")
+
+mrs_rootdist_ml %>% 
+  filter(plot_id == "2020_41")
+  filter(roots_kgha > 1000)
 
 rm_depth <- 
   mrs_rootdist_ml %>% 
@@ -148,6 +162,7 @@ emmeans(m2b, specs = c("depth", "rot_trt", "samp_time"))
 m3 <- lmer(roots_added_kgha ~ yearF*depth*rot_trt + (1|block), 
             data = rm_depth)
 anova(m3)
+#stats::aov(m3)
 
 em_m3 <- emmeans(m3, specs = c("depth", "rot_trt")) 
   
