@@ -116,6 +116,7 @@ ggsave("03_manu-figs/2004-2020-yields.png", width = 9.45, height = 5.03)
 
 # line with means labeled for 2013-2020 only-------------------------------------------------
 
+
 yldsmodmns <-  
   read_csv("01_yields/dat_ylds13-lmer-est.csv") %>%
   rename("value" = estimate) %>% 
@@ -164,6 +165,52 @@ p_line3
 
 ggsave("03_manu-figs/2004-2020-yields-gray.png", width = 9.45, height = 5.03)
 
+
+# 2013-2020 yuields-------------------------------------------------
+
+
+yldsmodmns <-  
+  read_csv("01_yields/dat_ylds13-lmer-est.csv") %>%
+  rename("value" = estimate) %>% 
+  mutate(name = "Grain yield\n2013-2020",
+         rot_trt = ifelse(rot_trt == "2y", "Simple", "Complex"),
+         rot_trt = fct_rev(rot_trt))
+
+
+p_line4 <- 
+  dat %>% 
+  left_join(mrs_plotkey) %>% 
+  group_by(rot_trt, year) %>% 
+  summarise(yield_Mgha = mean(yield_Mgha, na.rm = T)) %>% 
+  filter(rot_trt != "3y") %>% 
+  filter(year > 2012) %>% 
+  ggplot(aes(year, yield_Mgha)) + 
+  geom_line(aes(color = rot_trt, linetype = rot_trt), size = 1.5) +
+  geom_point(size = 4, aes(fill = rot_trt, pch = rot_trt)) +
+  scale_x_continuous(breaks = c(seq(from = 2004, to = 2020, by = 2))) +
+  scale_color_manual(values = c(pnk1, dkbl1),
+                     labels = c("Simple 2-year", "Complex 4-year")) + 
+  scale_fill_manual(values = c(pnk1, dkbl1),
+                    labels = c("Simple 2-year", "Complex 4-year")) + 
+  scale_linetype_manual(values = c("dashed", "solid"),
+                        labels = c("Simple 2-year", "Complex 4-year")) + 
+  scale_shape_manual(values = c(22, 24),
+                     labels = c("Simple 2-year", "Complex 4-year")) +
+  labs(x = "Year",
+       y = mghalab,
+       fill = "Rotation",
+       color = "Rotation",
+       shape = "Rotation",
+       linetype = "Rotation") + 
+  theme(legend.position = c(0.9, 0.1),
+        legend.justification = c(1, 0),
+        axis.text = element_text(size = rel(1.1)),
+        legend.background = element_rect(color = "black"))
+
+p_line4
+
+
+ggsave("03_manu-figs/2012-2020-yields.png", width = 7.17, height = 4.22)
 
 
 # bar chart of mean ----------------------------------------------------------
