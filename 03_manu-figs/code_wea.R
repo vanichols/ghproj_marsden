@@ -21,12 +21,25 @@ myth <-
 
 # precip ------------------------------------------------------------------
 
-#--cumultive precip
+#--cumultive precip for growing season
+
+#day of planting?
+mrs_cornplant
 
 #--total precip
 ptot <- 
   mrs_wea %>% 
   filter(day < 366) %>% 
+  group_by(year)  %>% 
+  summarise(tp = sum(rain_mm, na.rm = T)) 
+
+#--growing season precip
+ptot_gs <- 
+  mrs_wea %>% 
+  left_join(mrs_cornplant) %>% 
+  filter(!is.na(plant_date)) %>% 
+  filter(day >= plant_doy,
+         day <= harv_doy) %>% 
   group_by(year)  %>% 
   summarise(tp = sum(rain_mm, na.rm = T)) 
 
@@ -36,6 +49,16 @@ ptot_longterm <-
   summarise(tp = mean(tp)) %>% 
   pull(tp)
 
+ptot_gs_longterm <- 
+  mrs_wea %>% 
+  filter(day > 105,
+         day < 288) %>% 
+  group_by(year)  %>% 
+  mutate(tp = sum(rain_mm)) %>% 
+  ungroup() %>% 
+  summarise(tp = mean(tp, na.rm = T)) %>% 
+  pull(tp)
+
 pcum_longterm <- 
   mrs_wea %>% 
   filter(day < 366) %>% 
@@ -43,6 +66,18 @@ pcum_longterm <-
   mutate(cp = cumsum(rain_mm)) %>% 
   group_by(day) %>% 
   summarise(cp = mean(cp, na.rm = T)) 
+
+#--just say april 15 (doy 105) - oct 15 (doy288)
+
+pcum_gs_longterm <- 
+  mrs_wea %>% 
+  filter(day > 105,
+         day < 288) %>% 
+  group_by(year)  %>% 
+  mutate(cp = cumsum(rain_mm)) %>% 
+  group_by(day) %>% 
+  summarise(cp = mean(cp, na.rm = T)) 
+
 
 # temperature -------------------------------------------------------------
 
@@ -54,8 +89,32 @@ tav <-
   group_by(year)  %>% 
   summarise(tav = mean(tav, na.rm = T)) 
 
+
+tav_gs <- 
+  mrs_wea %>% 
+  left_join(mrs_cornplant) %>% 
+  filter(!is.na(plant_date)) %>% 
+  filter(day >= plant_doy,
+         day <= harv_doy) %>% 
+  mutate(tav = (maxt_c + mint_c)/2) %>% 
+  group_by(year)  %>% 
+  summarise(tav = mean(tav, na.rm = T)) 
+
+
 tav_longterm <- 
   tav %>% 
+  summarise(tav = mean(tav)) %>% 
+  pull(tav)
+
+#--just say april 15 (doy 105) - oct 15 (doy288)
+
+tav_gs_longterm <- 
+  mrs_wea %>% 
+  filter(day > 105, 
+         day < 288) %>% 
+  mutate(tav = (maxt_c + mint_c)/2) %>% 
+  group_by(year)  %>% 
+  summarise(tav = mean(tav, na.rm = T)) %>% 
   summarise(tav = mean(tav)) %>% 
   pull(tav)
 
@@ -82,6 +141,17 @@ ptot_dat <-
          msmt = str_remove_all(msmt, "NA, "),
          msmt = str_remove_all(msmt, ", NA"))
 
+ptot_gs_dat <- 
+  ptot_gs %>% 
+  filter(year > 2012) %>% 
+  mutate(yield_dat = ifelse(year %in% yyrs, "Yield data", NA),
+         root_dat = ifelse(year %in% ryrs, "root data", NA),
+         bio_dat = ifelse(year %in% bioyrs, "growth analysis", NA)) %>% 
+  unite(yield_dat, bio_dat, root_dat, col = "msmt", sep = ", ") %>% 
+  mutate(msmt = str_squish(msmt),
+         msmt = str_remove_all(msmt, "NA, "),
+         msmt = str_remove_all(msmt, ", NA"))
+
 
 
 # xy plot -----------------------------------------------------------------
@@ -96,6 +166,9 @@ yld_diffs <-
   pivot_wider(names_from = rot_trt, values_from = yld) %>% 
   janitor::clean_names() %>% 
   mutate(yld_diff = x4y - x2y)
+
+
+# total year --------------------------------------------------------------
 
 ptot_dat %>%
   left_join(tav) %>%
@@ -125,8 +198,6 @@ ptot_dat %>%
                            title.position = "top"))
 
 ggsave("03_manu-figs/fig_wea.png", width = 7.39, height = 5.67)
-
-
 
 # get rid of size legend --------------------------------------------------
 set.seed(123)
@@ -160,6 +231,46 @@ ptot_dat %>%
   #                          title.position = "top"))
 
 ggsave("03_manu-figs/fig_wea.png", width = 3.7, height = 4.7)
+
+
+
+# growing season? ---------------------------------------------------------
+
+ptot_gs_dat %>%
+  left_join(tav_gs) %>%
+  left_join(yld_diffs) %>% 
+  ggplot(aes(tp, tav)) +
+  geom_hline(yintercept = tav_gs_longterm, linetype = "dashed", color = "gray70") +
+  geom_vline(xintercept = ptot_gs_longterm, linetype = "dashed", color = "gray70") +
+  geom_point(aes(color = msmt, size = yld_diff)) +
+  geom_text(aes(x = 400, y = 21.5, label = "Hot and dry"),
+            color = "gray70", fontface = "italic", check_overlap = T) +
+  geom_text(aes(x = 750, y = 21.5, label = "Hot and wet"),
+            color = "gray70", fontface = "italic", check_overlap = T) +
+  geom_text(aes(x = 400, y = 18, label = "Cool and dry"),
+            color = "gray70", fontface = "italic", check_overlap = T) +
+  geom_text(aes(x = 750, y = 18, label = "Cool and wet"),
+            color = "gray70", fontface = "italic", check_overlap = T) +
+  geom_text_repel(aes(label = year)) +
+  scale_color_manual(values = c("Yield data" = "gray60",
+                                ltrd2, dkpnk1)) + 
+  guides(size = F) +
+  labs(size = expression("Yield advantage of complex rotation ("~Mg~ha^-1*")"),
+       #size = (expression(atop("Yield advantage\nof complex rotation", paste("(Mg "~ha^-1*")")))),
+       color = "Measurement set",
+       x = "Growing season precipitation (mm)",
+       y = expression("Mean air temperature ("*~degree*C*")")) + 
+  theme(legend.position = "top",
+        legend.direction = "vertical",
+        legend.background = element_rect(color = "black"),
+        legend.title.align = 0.5,
+        legend.title = element_text(size = rel(1)),
+        panel.grid = element_blank()) #+ 
+# guides(size=guide_legend(direction='horizontal',
+#                          title.position = "top"))
+
+ggsave("03_manu-figs/fig_wea-gs.png", width = 3.7, height = 4.7)
+
 
 
 
