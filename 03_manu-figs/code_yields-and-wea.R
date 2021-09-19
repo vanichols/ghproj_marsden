@@ -25,6 +25,22 @@ mghalab <- (expression(atop("Maize dry grain yield", paste("(Mg "~ha^-1*")"))))
 
 dat <- mrs_cornylds %>% filter(year > 2012)
 
+mystats <- 
+  read_csv("01_yields/dat_ylds13-lmer-sig-year-as-fixed.csv") 
+
+stars <- 
+  mystats %>% 
+  select(y1, adj.p.value) %>% 
+  filter(adj.p.value < 0.05) %>% 
+  mutate(year = as.numeric(str_remove(y1, "Y"))) 
+
+mybolds <- 
+  mystats %>% 
+  select(y1, adj.p.value) %>% 
+  mutate(year = as.numeric(str_remove(y1, "Y"))) %>% 
+  mutate(mybolds = ifelse(year %in% c(2013, 2014, 2016, 2017, 2018), "bold", "italic")) %>% 
+  pull(mybolds)
+
 fig_ylds <- 
   dat %>% 
   left_join(mrs_plotkey) %>% 
@@ -34,7 +50,9 @@ fig_ylds <-
   ggplot(aes(year, yield_Mgha)) + 
   geom_line(aes(color = rot_trt, linetype = rot_trt), size = 1.5) +
   geom_point(size = 4, aes(fill = rot_trt, pch = rot_trt)) +
-  scale_x_continuous(breaks = c(seq(from = 2004, to = 2020, by = 2))) +
+  geom_text(data = stars, aes(x = year, y = 7.5, label = "*"), size = 7) +
+  scale_x_continuous(breaks = c(seq(from = 2013, to = 2020, by = 1)),
+                     ) +
   scale_color_manual(values = c(pnk1, dkbl1),
                      labels = c("Simple 2-year", "Complex 4-year")) + 
   scale_fill_manual(values = c(pnk1, dkbl1),
@@ -54,7 +72,8 @@ fig_ylds <-
         legend.background = element_rect(color = "black"),
         legend.title.align = 0.5,
         legend.text = element_text(size = rel(1)),
-        legend.title = element_text(size = rel(1)))
+        legend.title = element_text(size = rel(1)),
+        axis.text.x = element_text(face = mybolds))
 
 
 fig_ylds
@@ -146,8 +165,9 @@ fig_wea <-
   geom_text(aes(x = 750, y = 18, label = "Cool and wet"),
             color = "gray70", fontface = "italic", check_overlap = T) +
   geom_text_repel(aes(label = year)) +
-  scale_fill_manual(values = c("Yield data" = "gray60",
-                                ltbl1, bl2)) + 
+  scale_fill_manual(values = c("Yield data" = "white",
+                               "gray70", "black")) +
+                                #ltbl1, bl2)) + 
   guides(size = F) +
   labs(size = expression("Yield advantage of complex rotation ("~Mg~ha^-1*")"),
        #size = (expression(atop("Yield advantage\nof complex rotation", paste("(Mg "~ha^-1*")")))),

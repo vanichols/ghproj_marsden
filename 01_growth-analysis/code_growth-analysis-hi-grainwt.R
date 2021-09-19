@@ -111,8 +111,11 @@ hi %>%
   facet_grid(.~year)
 
 hi %>% 
+  ungroup() %>% 
   select(year, date, doy, plot_id, hi) %>% 
+  distinct() %>% 
   write_csv("01_growth-analysis/dat_harvest-indices.csv")
+
 
 
 # individual model fitting -----------------------------------------------------------
