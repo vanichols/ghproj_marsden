@@ -13,6 +13,11 @@ source("03_manu-figs/palettes.R")
 
 theme_set(theme_bw())
 
+mghalab <- (expression(atop("Maize dry grain yield", paste("(Mg "~ha^-1*")"))))
+
+
+# raw data ----------------------------------------------------------------
+
 
 rd_raw <- 
   read_csv("01_rootdepth/td_rootdepth-elev-wea.csv") %>% 
@@ -54,18 +59,10 @@ rd_max <-
   filter(!(dap > 125 & year == 2020)) %>% 
   filter(!(dap > 100 & year == 2019)) 
 
-fig_max <- 
-  rd_max %>% 
-  ggplot(aes(dap, rootdepth_cm, color = rot_trt)) + 
-  geom_point(size = 3, alpha = 0.5, color = "red") + 
-  facet_grid(.~year)  + 
-  labs(title = "Trimmed dataset, logistic candidate")
 
-print(fig_max)
 
-fig_full / fig_max
+# use preds from nlraa fit ------------------------------------------------
 
-rd_max
 
 pdat <- read_csv("01_rootdepth/dat_nlraa-preds-for-fig.csv")
 
@@ -83,3 +80,5 @@ pdat %>%
 ggsave("03_manu-figs/sfig_rootdepth-by-year.png")
 ## The reality is that 2018 is messy
 
+
+# move to main manu (2/15/2022) -------------------------------------------
