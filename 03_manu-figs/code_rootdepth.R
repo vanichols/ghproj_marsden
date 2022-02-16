@@ -75,8 +75,9 @@ fig_dat %>%
        color = "Rotation",
        shape = "Rotation",
        linetype = "Rotation") + 
-  theme(legend.position = "top",
-        legend.direction = "horizontal",
+  theme(#legend.position = "top",
+        #legend.direction = "horizontal",
+    legend.position = c(0.15, 0.15),
         legend.background = element_rect(color = "black"),
         legend.title.align = 0.5,
         legend.text = element_text(size = rel(1)),
@@ -84,29 +85,4 @@ fig_dat %>%
 
 
 
-fig_dat %>%   
-  ggplot(aes(doy, rootdepth_cm, color = rot_trt2, fill = rot_trt2)) + 
-  geom_point(size = 4, pch  = 21) +
-  
-  scale_linetype_manual(values = c("solid", "dashed"))
-geom_point(size = 3, alpha = 0.5, aes(pch = rot_trt2)) +
-  geom_linerange(aes(x = doy, 
-                     ymin = rootdepth_cm - rootdepth_se, 
-                     ymax = rootdepth_cm + rootdepth_se )) +
-  geom_line() +
-  facet_grid(.~year, scales = "free") + 
-  scale_y_reverse() +
-  theme_bw() + 
-  scale_fill_manual(values = c(pnk1, dkbl1)) +
-  scale_color_manual(values = c(pnk1, dkbl1)) + 
-  labs(x = "Day of Year", 
-       y = "Maximum Maize\nRooting Depth\n(cm)",
-       color = NULL,
-       pch = NULL) + 
-  theme(legend.position = "top",
-        axis.title.y = element_text(angle = 0, vjust = 0.5),
-        legend.text = element_text(size = rel(1.2)),
-        strip.text = element_text(size = rel(1.2)),
-        axis.title = element_text(size = rel(1.2)))
-
-#ggsave("01_rootdepth/fig_max-rooting-depth-2018-2020.png", width = 7)
+ggsave("03_manu-figs/fig_rootdepth-by-year.png", width = 7)
