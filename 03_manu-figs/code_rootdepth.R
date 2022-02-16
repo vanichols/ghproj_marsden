@@ -67,9 +67,10 @@ fig_dat %>%
   facet_grid(.~ year, scales = "free") +
   myth +
   scale_y_reverse() +
-  scale_x_date(labels = date_format("%d-%b"),
-               breaks = "1 month") +
-  labs(x = "Date",
+  scale_x_date(labels = date_format("%b"),
+               breaks = "1 month",
+               expand = c(0.1, 0.1)) +
+  labs(x = NULL,
        y = "Maximum rooting depth (cm)",
        fill = "Rotation",
        color = "Rotation",
@@ -77,7 +78,7 @@ fig_dat %>%
        linetype = "Rotation") + 
   theme(#legend.position = "top",
         #legend.direction = "horizontal",
-    legend.position = c(0.15, 0.15),
+    legend.position = c(0.1, 0.15),
         legend.background = element_rect(color = "black"),
         legend.title.align = 0.5,
         legend.text = element_text(size = rel(1)),
