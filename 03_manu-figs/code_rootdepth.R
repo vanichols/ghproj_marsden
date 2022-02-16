@@ -78,7 +78,7 @@ fig_dat %>%
        linetype = "Rotation") + 
   theme(#legend.position = "top",
         #legend.direction = "horizontal",
-    legend.position = c(0.1, 0.15),
+    legend.position = c(0.15, 0.15),
         legend.background = element_rect(color = "black"),
         legend.title.align = 0.5,
         legend.text = element_text(size = rel(1)),
