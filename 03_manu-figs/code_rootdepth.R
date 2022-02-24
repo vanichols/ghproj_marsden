@@ -1,6 +1,7 @@
 # Gina
 # show maximum root deptsh
 # created: 2/15/2022
+# updated: 2/23/2022 - made fig with smooth preds
 
 
 rm(list=ls())
@@ -20,6 +21,7 @@ source("03_manu-figs/palettes.R")
 
 theme_set(theme_bw())
 
+
 myth <- 
   theme(strip.text = element_text(size = rel(1.2)),
         strip.background = element_blank(),
@@ -30,6 +32,10 @@ mghalab <- (expression(atop("Maize dry grain yield", paste("(Mg "~ha^-1*")"))))
 
 # data --------------------------------------------------------------------
 
+doy_to_cum_gdd <- 
+  read_csv("01_rootdepth/td_rootdepth-elev-wea.csv") %>%
+  select(year, doy, cum_gdd) %>% 
+  distinct()
 
 fig_dat <- 
   mrs_rootdepth %>% 
@@ -44,9 +50,21 @@ fig_dat <-
                 rootdepth_se = rootdepth_sd/sqrt(4-1))
   ) %>% 
   filter(doy < 240) %>% 
-  mutate(rot_trt2 = ifelse(rot_trt == "2y", "Simple", "Complex")) 
+  mutate(rot_trt2 = ifelse(rot_trt == "2y", "Simple", "Complex")) %>% 
+  left_join(doy_to_cum_gdd)
+
+fig_dat_block <- 
+  mrs_rootdepth %>% 
+  left_join(mrs_plotkey) %>%
+  group_by(year, doy, date, rot_trt, block) %>% 
+  summarise(rootdepth_cm = mean(rootdepth_cm, na.rm = T)) %>% 
+  filter(doy < 240) %>% 
+  mutate(rot_trt2 = ifelse(rot_trt == "2y", "Simple", "Complex")) %>% 
+  left_join(doy_to_cum_gdd)
 
 
+fig_preds <- 
+  read_csv("01_rootdepth/dat_nlraa-preds-smooth-for-fig.csv")
 
 # fig ---------------------------------------------------------------------
 
@@ -87,3 +105,43 @@ fig_dat %>%
 
 
 ggsave("03_manu-figs/fig_rootdepth-by-year.png", width = 7)
+
+
+# fig with preds ----------------------------------------------------------
+
+ggplot() + 
+  geom_line(data = fig_preds, 
+            aes(cum_gdd, pred, color = rot_trt, linetype = rot_trt), 
+            size = 1.5) +
+  geom_point(
+    data = fig_dat_block,
+    aes(cum_gdd, rootdepth_cm, fill = rot_trt, pch = rot_trt),
+             size = 1.5, alpha = 0.4, stroke = 0.5) +
+  facet_grid(.~ year, scales = "free") +
+  scale_color_manual(values = c(pnk1, dkbl1),
+                     labels = c("Simple 2-year", "Complex 4-year")) + 
+  scale_fill_manual(values = c(pnk1, dkbl1),
+                    labels = c("Simple 2-year", "Complex 4-year")) + 
+  scale_linetype_manual(values = c("dashed", "solid"),
+                        labels = c("Simple 2-year", "Complex 4-year")) + 
+  scale_shape_manual(values = c(22, 24),
+                     labels = c("Simple 2-year", "Complex 4-year")) +
+  myth +
+  scale_y_reverse() +
+  labs(x = "\nCumulative growing degree days (base 10 deg C)",
+       y = "Maximum maize rooting depth (cm)\n",
+       fill = "Rotation",
+       color = "Rotation",
+       shape = "Rotation",
+       linetype = "Rotation") + 
+  theme(#legend.position = "top",
+    #legend.direction = "horizontal",
+    axis.title = element_text(size = rel(1.2)),
+    legend.position = c(0.15, 0.15),
+    legend.background = element_rect(color = "black"),
+    legend.title.align = 0.5,
+    legend.text = element_text(size = rel(1)),
+    legend.title = element_text(size = rel(1)))
+
+
+ggsave("03_manu-figs/fig_rootdepth-by-year-fitted.png", width = 7)

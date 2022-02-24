@@ -141,10 +141,31 @@ rd_maxG$prd0 <- apply(sim0, 1, median)
 rd_maxG$lwr0 <- apply(sim0, 1, quantile, probs = 0.05)
 rd_maxG$upr0 <- apply(sim0, 1, quantile, probs = 0.95)
 
-ggplot(rd_maxG, aes(x = cum_gdd, y = rootdepth_cm, color = rotation)) + 
-  geom_point() + 
-  geom_line(aes(y = prd0), size = 3) + 
-  geom_ribbon(aes(ymin = lwr0, ymax = upr0, fill = rotation), alpha = 0.2)
+# make smooth preds -------------------------------------------------------
+
+#--try to get smooth predictions
+gdd_new <- tibble(cum_gdd = seq(0:1100))
+
+new_data <- 
+  rd_max %>% 
+  select(-cum_gdd) %>% 
+  expand_grid(., gdd_new)
+
+new_data$pred <- predict(fm4, newdata = new_data)
+
+#--write preds with actual data
+new_data %>% 
+  write_csv("01_rootdepth/dat_nlraa-preds-smooth-for-fig.csv")
+
+ggplot(new_data, aes(x = cum_gdd, y = pred, color = rotation)) +
+  geom_line() +
+  #geom_point(rd_max, aes(x= cum_gdd, y = rootdepth_cm)) + 
+  geom_point(data = rd_max, aes(x = cum_gdd, y = rootdepth_cm)) +
+  facet_grid(.~year.f)
+
+
+# stats -------------------------------------------------------------------
+
 
 ## Test for asymptote
 emmeans(fm4, ~rotation, param = "Asym")
