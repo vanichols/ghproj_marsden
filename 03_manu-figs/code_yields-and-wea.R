@@ -147,7 +147,15 @@ yld_diffs <-
   janitor::clean_names() %>% 
   mutate(yld_diff = x4y - x2y)
 
-set.seed(125)
+
+#--what are the msmt values?
+ptot_gs_dat %>%
+  left_join(tav_gs) %>%
+  left_join(yld_diffs) %>% 
+  pull(msmt) %>% 
+  unique()
+
+set.seed(12)
 fig_wea <- 
   ptot_gs_dat %>%
   left_join(tav_gs) %>%
@@ -155,7 +163,9 @@ fig_wea <-
   ggplot(aes(tp, tav)) +
   geom_hline(yintercept = tav_gs_longterm, linetype = "dashed", color = "gray70") +
   geom_vline(xintercept = ptot_gs_longterm, linetype = "dashed", color = "gray70") +
-  geom_point(aes(fill = msmt, size = yld_diff), color = "black", pch = 21) +
+  geom_point(aes(fill = msmt, size = yld_diff), 
+             color = "black", 
+             pch = 21) +
   geom_text(aes(x = 400, y = 21.5, label = "Hot and dry"),
             color = "gray70", fontface = "italic", check_overlap = T) +
   geom_text(aes(x = 750, y = 21.5, label = "Hot and wet"),
@@ -164,11 +174,14 @@ fig_wea <-
             color = "gray70", fontface = "italic", check_overlap = T) +
   geom_text(aes(x = 750, y = 18, label = "Cool and wet"),
             color = "gray70", fontface = "italic", check_overlap = T) +
-  geom_text_repel(aes(label = year)) +
+  geom_text_repel(aes(label = year),
+                  box.padding = 0.5, 
+                  segment.colour = NA) +
   scale_fill_manual(values = c("Yield data" = "white",
-                               "gray70", "black")) +
+                               "Yield data, growth analysis" = "gray70", 
+                               "Yield data, growth analysis, root data" = "black")) +
                                 #ltbl1, bl2)) + 
-  guides(size = F) +
+  guides(size = "none") +
   labs(size = expression("Yield advantage of complex rotation ("~Mg~ha^-1*")"),
        #size = (expression(atop("Yield advantage\nof complex rotation", paste("(Mg "~ha^-1*")")))),
        color = "Measurement set",
@@ -185,6 +198,8 @@ fig_wea <-
 
 
 fig_wea
+
+
 
 # pathcwork ---------------------------------------------------------------
 
