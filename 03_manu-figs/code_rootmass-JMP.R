@@ -7,20 +7,28 @@ rm(list = ls())
 library(tidyverse)
 library(patchwork)
 library(maRsden)
-library(nlraa)
-library(emmeans)
 
 source("03_manu-figs/palettes.R")
 
 theme_set(theme_bw())
 
-my_ylab <- (expression(atop("Root mass added from baseline", paste("over growing season (kg "~ha^-1*")"))))
+my_ylab <- (expression(atop("Root mass at maize maturity", paste("relative to root mass at planting (kg "~ha^-1*")"))))
 
 # matt's results ----------------------------------------------------------
 
-dat <- read_csv("01_rootdist-ml/manual_mattJMPres-diff.csv")
+dat <- 
+  read_csv("01_rootdist-ml/manual_mattJMPres-diff.csv") 
+
+dat_tot <- 
+  dat %>% 
+  #--can I do this?
+  group_by(rot_trt) %>% 
+  summarise(mean = sum(mean),
+            se = mean(se)) %>% 
+  mutate(depth = "Total (0-60 cm)")
 
 dat %>% 
+  bind_rows(dat_tot) %>% 
   mutate(rot_trt = ifelse(rot_trt == "2y", "Simple", "Complex"),
          rot_trt = factor(rot_trt, levels = c("Simple", "Complex")),
          depth = fct_inorder(depth)) %>% 

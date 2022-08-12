@@ -217,7 +217,7 @@ ggplot() +
   myth +
   scale_y_reverse() +
   labs(x = "\nCumulative growing degree days (base 10 deg C)",
-       y = "Maximum maize rooting depth (cm)\n",
+       y = "Maize rooting depth (cm)\n",
        fill = "Rotation",
        color = "Rotation",
        size = "Rotation",
