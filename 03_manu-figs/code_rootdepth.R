@@ -2,6 +2,7 @@
 # show maximum root deptsh
 # created: 2/15/2022
 # updated: 2/23/2022 - made fig with smooth preds
+#          8/12/2022 - add corn stages
 
 
 rm(list=ls())
@@ -145,3 +146,11 @@ ggplot() +
 
 
 ggsave("03_manu-figs/fig_rootdepth-by-year-fitted.png", width = 7)
+
+
+
+# fig with corn stages ----------------------------------------------------
+
+mrs_phen %>% 
+  left_join(doy_to_cum_gdd) %>% 
+  select(year, cum_gdd, pl_stage)
