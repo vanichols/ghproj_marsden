@@ -151,6 +151,86 @@ ggsave("03_manu-figs/fig_rootdepth-by-year-fitted.png", width = 7)
 
 # fig with corn stages ----------------------------------------------------
 
-mrs_phen %>% 
-  left_join(doy_to_cum_gdd) %>% 
-  select(year, cum_gdd, pl_stage)
+gdds_all <- 
+  read_csv("01_gdds/td_gdds.csv")
+
+gdd_phen <- 
+  mrs_phen %>% 
+  select(year, date, doy, pl_stage) %>% 
+  distinct() %>% 
+  arrange(year, date, doy, pl_stage) %>% 
+  group_by(year, date, doy) %>% 
+  slice(1) %>% 
+  left_join(gdds_all) %>% 
+  rename(cum_gdd = cum_gdds)
+
+
+gdd_phen %>% 
+  filter(year == 2020)
+
+#--only keep some of the stages (too cluttered)
+
+phen_for_fig <- 
+  gdd_phen %>%
+  mutate(pl_stage_fig = case_when(
+    (year == 2018 & doy == 152) ~ "V5",
+    (year == 2018 & doy == 176) ~ "V12",
+    (year == 2018 & doy == 194) ~ "R2",#--change this to 194-197
+    (year == 2019 & doy == 177) ~ "V4", 
+    (year == 2019 & doy == 205) ~ "V12",
+    (year == 2019 & doy == 232) ~ "R2",
+    (year == 2020 & doy == 155) ~ "V5",
+    (year == 2020 & doy == 184) ~ "V13",
+    (year == 2020 & doy == 205) ~ "R2"
+  )) %>% 
+  filter(!is.na(pl_stage_fig))
+
+
+ggplot() + 
+  geom_line(data = fig_preds, 
+            aes(cum_gdd, pred, color = rot_trt, size = rot_trt), 
+            #size = 1.5
+            ) +
+  geom_point(
+    data = fig_dat_block,
+    aes(cum_gdd, rootdepth_cm, fill = rot_trt, pch = rot_trt),
+    size = 1.5, alpha = 0.4, stroke = 0.5) +
+  geom_text(
+    data = phen_for_fig,
+    aes(x = cum_gdd, 
+        y = -10, 
+        label = pl_stage_fig,
+        fontface = "italic", 
+        check_overlap = T),
+    color = "gray50") +
+  facet_grid(.~ year, scales = "free") +
+  scale_color_manual(values = c(pnk1, dkbl1),
+                     labels = c("Simple 2-year", "Complex 4-year")) + 
+  scale_fill_manual(values = c(pnk1, dkbl1),
+                    labels = c("Simple 2-year", "Complex 4-year")) + 
+  # scale_linetype_manual(values = c("solid", "solid"),
+  #                       labels = c("Simple 2-year", "Complex 4-year")) + 
+  scale_size_manual(values = c(1, 1.5),
+                        labels = c("Simple 2-year", "Complex 4-year")) +
+  scale_shape_manual(values = c(22, 24),
+                     labels = c("Simple 2-year", "Complex 4-year")) +
+  myth +
+  scale_y_reverse() +
+  labs(x = "\nCumulative growing degree days (base 10 deg C)",
+       y = "Maximum maize rooting depth (cm)\n",
+       fill = "Rotation",
+       color = "Rotation",
+       size = "Rotation",
+       shape = "Rotation",
+       linetype = "Rotation") + 
+  theme(#legend.position = "top",
+    #legend.direction = "horizontal",
+    axis.title = element_text(size = rel(1.2)),
+    legend.position = c(0.15, 0.15),
+    legend.background = element_rect(color = "black"),
+    legend.title.align = 0.5,
+    legend.text = element_text(size = rel(1)),
+    legend.title = element_text(size = rel(1)))
+
+
+ggsave("03_manu-figs/fig_rootdepth-by-year-fitted-phen.png", width = 7)
