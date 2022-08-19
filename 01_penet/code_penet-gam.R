@@ -200,7 +200,7 @@ res <-
   d18a_res3 %>% 
   bind_rows(d18b_res4) %>% 
   bind_rows(d19_res5) %>% 
-  bind_rows(d20_res6) %>% 
+  bind_rows(d20_res7) %>% 
   mutate(samp = paste(year, doy)) %>% 
   mutate(
     year_num = str_sub(year, 2, -1),
