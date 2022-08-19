@@ -19,6 +19,26 @@ library(maRsden)
 #--note, eliminate 2020 plot 22 on last day (NAs)
 
 
+# how close are the above ground and root measurements date wise? ---------
+
+root_dates <- 
+  mrs_rootdist_ml %>%
+  filter(dap %in% c(105, 117)) %>% 
+    select(year, date) %>%
+    mutate(smp = "root")
+  
+bio_dates <- 
+  mrs_cornbio %>%
+    select(year, date) %>%
+  filter(year %in% c(2019, 2020)) %>% 
+    distinct() %>%
+    mutate(smp2 = "bio")
+
+root_dates %>% 
+  full_join(bio_dates) %>% 
+  distinct() %>% 
+  arrange(year, date)
+
 # diffs between each sampling point ---------------------------------------
 
 #--relabel dap as 1st 2nd 3rd dap etc.
