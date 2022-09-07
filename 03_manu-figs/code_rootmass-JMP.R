@@ -27,6 +27,14 @@ dat_tot <-
             se = mean(se)) %>% 
   mutate(depth = "Total (0-60 cm)")
 
+dat_tot %>% 
+  select(rot_trt, mean) %>% 
+  pivot_wider(names_from = rot_trt, values_from = mean) %>% 
+  janitor::clean_names() %>% 
+  mutate(diff = x2y - x4y,
+         rel = diff/x2y,
+         rat = x4y/x2y)
+
 dat %>% 
   bind_rows(dat_tot) %>% 
   mutate(rot_trt = ifelse(rot_trt == "2y", "Simple", "Complex"),
