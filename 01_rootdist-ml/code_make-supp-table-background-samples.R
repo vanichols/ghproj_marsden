@@ -33,3 +33,34 @@ d19 %>%
   bind_rows(d20) %>% 
   mutate_if(is.numeric, round, 0) %>% 
   write_csv("01_rootdist-ml/dat_table-s1-bkgd-values.csv")
+
+
+
+# maximum -----------------------------------------------------------------
+
+dat2 <- 
+  mrs_rootdist_ml %>% 
+  group_by(year) %>% 
+  mutate(dap_max = max(dap)) %>% 
+  filter(dap == dap_max) %>% 
+  left_join(mrs_plotkey) %>% 
+  select(year, depth, rot_trt, block, roots_kgha) %>% 
+  distinct() %>% 
+  group_by(year, rot_trt, block) %>% 
+  summarise(roots_kgha = sum(roots_kgha, na.rm = T)) %>% 
+  mutate(rot_trt = ifelse(rot_trt == "2y", "Simple", "Complex"))
+
+fd19 <- 
+  dat2 %>% 
+  filter(year == 2019) %>% 
+  pivot_wider(names_from = rot_trt, values_from = roots_kgha)
+
+fd20 <- 
+  dat2 %>% 
+  filter(year == 2020) %>% 
+  pivot_wider(names_from = rot_trt, values_from = roots_kgha)
+
+fd19 %>% 
+  bind_rows(fd20) %>% 
+  mutate_if(is.numeric, round, 0) %>% 
+  write_csv("01_rootdist-ml/dat_table-s1-max-values.csv")
