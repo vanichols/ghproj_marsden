@@ -31,4 +31,5 @@ d20 <-
 
 d19 %>% 
   bind_rows(d20) %>% 
-  write_csv("dat_table-s1-bkgd-values.csv")
+  mutate_if(is.numeric, round, 0) %>% 
+  write_csv("01_rootdist-ml/dat_table-s1-bkgd-values.csv")
