@@ -55,7 +55,7 @@ p_line <-
   scale_linetype_manual(values = c("dashed", "solid"),
                         labels = c("Simple 2-year", "Complex 4-year")) + 
   labs(x = "Year",
-       y = myyieldlab,
+       y = mghalab,
        fill = "Rotation",
        color = "Rotation",
        linetype = "Rotation") + 
@@ -66,6 +66,8 @@ p_line <-
 
 
 p_line
+
+ggsave("03_talk-figs/2004-2020-yields-simple.png", width = 5, height = 4)
 
 
 # line with means labeled -------------------------------------------------
