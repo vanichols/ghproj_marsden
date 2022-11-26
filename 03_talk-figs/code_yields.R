@@ -70,6 +70,43 @@ p_line
 ggsave("03_talk-figs/2004-2020-yields-simple.png", width = 5, height = 4)
 
 
+# line graph big text----------------------------------------------------------
+
+p_line2 <- 
+  dat %>% 
+  left_join(mrs_plotkey) %>% 
+  group_by(rot_trt, year) %>% 
+  summarise(yield_Mgha = mean(yield_Mgha, na.rm = T)) %>% 
+  filter(rot_trt != "3y") %>% 
+  ggplot(aes(year, yield_Mgha)) + 
+  geom_line(aes(color = rot_trt, linetype = rot_trt)) +
+  geom_point(pch = 21, size = 3, aes(fill = rot_trt)) +
+  scale_color_manual(values = c(clr_rot, clr_div),
+                     labels = c("Simple 2-year Rotation", "Complex 4-year Rotation")) + 
+  scale_fill_manual(values = c(clr_rot, clr_div),
+                    labels = c("Simple 2-year Rotation", "Complex 4-year Rotation")) + 
+  scale_linetype_manual(values = c("dashed", "solid"),
+                        labels = c("Simple 2-year Rotation", "Complex 4-year Rotation")) + 
+  labs(x = "Year",
+       y = mghalab,
+       fill = " ",
+       color = " ",
+       linetype = " ") + 
+  theme(legend.position = c(0.1, 0.1),
+        legend.justification = c(0,0),
+        legend.background = element_blank(),
+        legend.text = element_text(size = rel(1.2)),
+        #legend.title = element_text(size = rel(1.2)),
+        axis.title = element_text(size = rel(1.3)),
+        axis.title.y = element_text(angle = 0, vjust = 0.5)) + 
+  scale_y_continuous(limits = c(0, 13))
+
+
+p_line2
+
+ggsave("03_talk-figs/2004-2020-yields-large-text.png", width = 7, height = 4)
+
+
 # line with means labeled -------------------------------------------------
 
 mns <- 
