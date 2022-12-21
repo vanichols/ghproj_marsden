@@ -167,6 +167,9 @@ ggplot(new_data, aes(x = cum_gdd, y = pred, color = rotation)) +
 # stats -------------------------------------------------------------------
 
 
+
+emmeans(fm4, ~rotation, param = "scal")
+
 ## Test for asymptote
 emmeans(fm4, ~rotation, param = "Asym")
 contrast(emmeans(fm4, ~rotation, param = "Asym"), "pairwise")
