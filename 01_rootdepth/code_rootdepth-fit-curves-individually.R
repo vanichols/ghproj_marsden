@@ -60,7 +60,6 @@ nls_logis <- function(dat){
 }
 
 
-
 #--test on one
 (nls_logis(filter(rd_mod, eu == "2018_2y"))) 
 
@@ -90,7 +89,44 @@ logis_rd %>%
   geom_point()
 
 
+# get uncertainty around parameters ---------------------------------------
 
+nls_logis2 <- function(dat){
+  res <- (summary(nls(rootdepth_cm ~ SSlogis(cum_gdd, Asym, xmid, scal), data = dat))$parameters)
+  
+  res2 <- res %>% 
+    as_tibble() %>% 
+    janitor::clean_names() %>% 
+    mutate(param = row.names(res))
+  
+  return(res2)
+  
+}
+
+nls_logis2(dum_dat)
+
+#--map function to each eu data
+logis2_rd <-
+  rd_mod %>%
+  group_by(eu) %>% 
+  nest(data = c(cum_gdd, rootdepth_cm)) %>%
+  mutate(
+    mod_fit = data %>% map(possibly(nls_logis2, NULL)),
+    # is_null = mod_fit %>% map_lgl(is.null)
+  ) %>% 
+  #filter(is_null == 0) %>%  
+  unnest(cols = c(mod_fit)) %>% 
+  left_join(mrs_plotkey %>% mutate(eu = paste(year, rot_trt, sep = "_"))) %>% 
+  ungroup() %>% 
+  select(year, rot_trt, param, estimate, std_error) %>% 
+  distinct() %>% 
+  mutate(loCI = estimate - 1.96 * std_error,
+         hiCI = estimate + 1.96 * std_error) %>% 
+  select(-std_error)
+
+
+logis2_rd %>% 
+  write_csv("01_rootdepth/dat_nls-parameters-eu-CIs.csv")
 
 # include block ------------------------------------------------------------
 
