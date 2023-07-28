@@ -65,6 +65,109 @@ mrs_rootdist_ml %>%
   geom_line() + 
   facet_grid(depth ~ year)
 
+#--average over plots
+mrs_rootdist_ml %>% 
+  left_join(mrs_plotkey, relationship = "many-to-many") %>% 
+  group_by(year, rot_trt, dap, depth) %>% 
+  summarise(roots_kgha = mean(roots_kgha, na.rm = T)) %>% 
+  ggplot(aes(dap, roots_kgha, color = rot_trt)) + 
+  geom_point() + 
+  geom_line() + 
+  facet_grid(depth ~ year)
+
+#--what was the root mass at the end of the season?
+tot_end <- 
+  mrs_rootdist_ml %>% 
+  left_join(mrs_plotkey, relationship = "many-to-many") %>% 
+  group_by(year, rot_trt, dap, depth) %>% 
+  summarise(roots_kgha = mean(roots_kgha, na.rm = T)) %>% 
+  filter(dap > 104) %>% 
+  group_by(year, rot_trt, dap) %>% 
+  summarise(roots_kgha = sum(roots_kgha)) %>% 
+  mutate(depth = "0-60cm")
+
+mrs_rootdist_ml %>% 
+  left_join(mrs_plotkey, relationship = "many-to-many") %>% 
+  group_by(year, rot_trt, dap, depth) %>% 
+  summarise(roots_kgha = mean(roots_kgha, na.rm = T)) %>% 
+  filter(dap > 104) %>% 
+  bind_rows(tot_end) %>% 
+  ggplot(aes(rot_trt, roots_kgha)) + 
+  geom_col() + 
+  facet_grid(year~depth)
+  
+# make it easier to compare
+mrs_rootdist_ml %>% 
+  left_join(mrs_plotkey, relationship = "many-to-many") %>% 
+  group_by(year, rot_trt, dap, depth) %>% 
+  summarise(roots_kgha = mean(roots_kgha, na.rm = T)) %>% 
+  filter(dap > 104) %>% 
+  mutate(depthF = fct_inorder(depth),
+         depthFN = as.numeric(depthF)) %>% 
+  ggplot(aes(depthFN, roots_kgha, color = rot_trt)) + 
+  geom_line(linetype = "dashed") + 
+  geom_point() + 
+  facet_grid(.~year) +
+  coord_flip() + 
+  scale_x_reverse()
+
+#--% in each layer
+mrs_rootdist_ml %>% 
+  left_join(mrs_plotkey, relationship = "many-to-many") %>% 
+  group_by(year, rot_trt, dap, depth) %>% 
+  summarise(roots_kgha = mean(roots_kgha, na.rm = T)) %>% 
+  filter(dap > 104) %>% 
+  group_by(year, rot_trt) %>% 
+  mutate(cumroots = cumsum(roots_kgha),
+         totroots = sum(roots_kgha),
+         pctcumroots = cumroots/totroots,
+         pctroots = roots_kgha/totroots) %>% 
+  group_by(rot_trt, depth) %>% 
+  summarise(pctroots = mean(pctroots)) %>% 
+  mutate(depthF = fct_inorder(depth),
+         depthFN = as.numeric(depthF)) %>% 
+  ggplot(aes(depthFN, pctroots, color = rot_trt)) + 
+  geom_line() + 
+  coord_flip() + 
+  scale_x_reverse()
+
+#--root proportions
+mrs_rootdist_ml %>% 
+  left_join(mrs_plotkey, relationship = "many-to-many") %>% 
+  group_by(year, rot_trt, dap, depth) %>% 
+  summarise(roots_kgha = mean(roots_kgha, na.rm = T)) %>% 
+  filter(dap > 104) %>% 
+  group_by(year, rot_trt, dap) %>% 
+  mutate(depthF = fct_inorder(depth),
+         depthF = fct_rev(depthF),
+         totroots = sum(roots_kgha),
+         aroots = totroots - roots_kgha) %>% 
+  select(depthF, everything(), -totroots) %>% 
+  pivot_longer(roots_kgha:aroots) %>% 
+  ggplot(aes(depthF, value, fill = name)) + 
+  geom_col() + 
+  coord_flip() +
+  facet_grid(rot_trt~year)
+
+#--root proportions all dap/year combos, groupe dby year
+mrs_rootdist_ml %>% 
+  left_join(mrs_plotkey, relationship = "many-to-many") %>% 
+  mutate(dap = fct_inorder(as.factor(dap))) %>% 
+  group_by(year, dap, rot_trt, depth) %>% 
+  summarise(roots_kgha = mean(roots_kgha, na.rm = T)) %>% 
+  #filter(dap > 104) %>% 
+  group_by(year, dap, rot_trt) %>% 
+  mutate(depthF = fct_inorder(depth),
+         depthF = fct_rev(depthF),
+         totroots = sum(roots_kgha),
+         aroots = totroots - roots_kgha) %>% 
+  select(depthF, everything(), -totroots) %>% 
+  pivot_longer(roots_kgha:aroots) %>% 
+  ggplot(aes(depthF, value, fill = name)) + 
+  geom_col() + 
+  coord_flip() +
+  facet_grid(rot_trt~year+dap)
+
 #--calc diffs between each sampling
 gap_dat <- 
   mrs_rootdist_ml %>% 
@@ -106,6 +209,18 @@ gap_dat %>%
   facet_grid(.~year) + 
   labs(title = "Change in roots from one sampling to next",
        subtitle = "+ = inc, - = dec")
+
+#--combine years
+gap_dat %>% 
+  mutate(depth = fct_inorder(depth),
+         depth = fct_rev(depth)) %>% 
+  ggplot(aes(depth, value)) + 
+  geom_violin(aes(fill = rot_trt), width = 0.75) + 
+  geom_hline(yintercept = 0) +
+  coord_flip() +
+  labs(title = "Change in roots from one sampling to next",
+       subtitle = "+ = inc, - = dec")
+
 
 #--boxplot
 gap_dat %>% 

@@ -2,6 +2,7 @@
 # created 7/21/2021
 # notes: I'm getting less roots at the end of season compared to beg
 #        matt said try doing top layers, or doing it by layer
+# updated 7/28/2023
 
 rm(list=ls())
 library(tidyverse)
@@ -12,7 +13,7 @@ library(lme4)
 library(lmerTest)
 library(emmeans)
 
-#--note, eliminate 2020 plot 22 on day XX
+#--note, eliminate 2020 plot 22 on day 117
 
 
 # matt stats --------------------------------------------------------------
@@ -26,6 +27,80 @@ p22 <-
   mrs_rootdist_ml %>% 
   filter(plot_id == "2020_22")
 
+
+# new 7/28/23 -------------------------------------------------------------
+
+d_tot <- 
+  mrs_rootdist_mlsum %>% 
+  select(year, date, dap, plot_id, roots_kgha) %>% 
+  filter(!(plot_id == "2020_22" & dap == 117)) %>% 
+  left_join(mrs_plotkey, relationship = "many-to-many") %>% 
+  distinct() %>% 
+  select(year, date, dap, plot_id, block, rot_trt, roots_kgha) %>% 
+  mutate(yearF = as.factor(year))
+
+d_depth <- 
+  mrs_rootdist_ml %>% 
+  select(year, date, dap, plot_id, depth, roots_kgha) %>% 
+  filter(!(plot_id == "2020_22" & dap == 117)) %>% 
+  left_join(mrs_plotkey, relationship = "many-to-many") %>% 
+  distinct() %>% 
+  select(year, date, dap, plot_id, block, rot_trt, depth, roots_kgha) %>% 
+  mutate(yearF = as.factor(year))
+
+d_depthP <-
+  d_depth %>% 
+  group_by(year, date, dap, plot_id) %>% 
+  mutate(totroots_kgha = sum(roots_kgha),
+         proots = roots_kgha/totroots_kgha,
+         #--make two groupings of depths
+         depth2 = ifelse(depth == "0-15cm", "surface", "deeper")) 
+
+d_depthP_stats <- 
+  d_depthP %>% 
+  mutate(depthN = paste0(year, rot_trt, depth))
+    
+# write for matt to test - emailed him
+d_depthP %>% 
+  select(year, date, dap, plot_id, block, rot_trt, depth, roots_kgha, totroots_kgha, proots) %>% 
+  filter(dap >100) %>% 
+  write_csv("01_rootdist-ml/dat_roots-maturity-4matt.csv")
+
+#--is the total biomass different by year*rot_trt at the end of the season? No
+m1 <- lmer(roots_kgha ~ yearF*rot_trt + (1|yearF:block), 
+           data = d_tot %>% filter(dap > 100))
+
+anova(m1)
+
+#--is the percentage of biomass in each layer different at the end of the year?
+m2a <- lmer(proots ~ rot_trt*depth + (1|yearF:block) + (1|rot_trt:block), 
+           data = d_depthP_stats %>% filter(dap > 100))
+anova(m2a)
+
+pairs(emmeans(m2a, specs = c("rot_trt", "depth")) ) %>% 
+  broom::tidy() %>% 
+  separate(contrast, into = c("t1", "t2"), sep = " - ") %>% 
+  separate(t1, into = c("rot1", "d1"), sep = " ") %>% 
+  separate(t2, into = c("rot2", "d2"), sep = " ") %>% 
+  filter(rot1 != rot2,
+         d1 == d2) 
+
+
+m2b <- lmer(proots ~ rot_trt*depth2 + (1|yearF:block:depth2), 
+            data = d_depthP %>% filter(dap > 100))
+
+anova(m2b)
+
+em1 <- emmeans(m2b, specs = c("rot_trt", "depth2")) 
+
+pairs(em1) %>% 
+  broom::tidy() %>% 
+  separate(contrast, into = c("t1", "t2"), sep = " - ") %>% 
+  separate(t1, into = c("rot1", "d1"), sep = " ") %>% 
+  separate(t2, into = c("rot2", "d2"), sep = " ") %>% 
+  filter(rot1 != rot2,
+         d1 == d2) 
+
 mrs_rootdist_ml %>% 
   left_join(mrs_plotkey) %>% 
   ggplot(aes(dap, roots_kgha, group = plot_id, color = rot_trt)) + 
@@ -34,7 +109,7 @@ mrs_rootdist_ml %>%
   facet_grid(depth ~ year, scales = "free")
 
 mrs_rootdist_ml %>% 
-  filter(plot_id == "2020_41")
+  filter(plot_id == "2020_41") %>% 
   filter(roots_kgha > 1000)
 
 rm_depth <- 
