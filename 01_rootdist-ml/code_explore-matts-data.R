@@ -2,6 +2,8 @@
 # created 7/21/2021
 # notes: I'm getting less roots at the end of season compared to beg
 #        matt said try doing top layers, or doing it by layer
+# updated: 7/31/2023, doing back of the envelope calcs
+
 
 rm(list=ls())
 library(tidyverse)
@@ -16,7 +18,12 @@ library(maRsden)
 #   arrange(date, block, rot_trt) %>% 
 #   write_csv("01_rootdist-ml/dat_matt-compare.csv")
 
-#--note, eliminate 2020 plot 22 on last day (NAs)
+#--note, eliminate 2020 plot 22 on last day (NAs)?
+
+mrs_rootdist_ml %>% 
+  filter(plot_id == "2020_22",
+         dap == max(dap))
+
 
 
 # how close are the above ground and root measurements date wise? ---------
@@ -75,7 +82,53 @@ mrs_rootdist_ml %>%
   geom_line() + 
   facet_grid(depth ~ year)
 
-#--what was the root mass at the end of the season?
+#--get some raw values for first and last sampling
+#--thought experiment
+te <- 
+  mrs_rootdist_ml %>% 
+  left_join(mrs_plotkey, relationship = "many-to-many") %>% 
+  group_by(year, rot_trt, dap, depth) %>% 
+  summarise(roots_kgha = mean(roots_kgha, na.rm = T)) %>% 
+  group_by(year) %>% 
+  mutate(dap_first = min(dap),
+         dap_last = max(dap)) %>% 
+  filter((dap == dap_first)|(dap == dap_last)) %>% 
+  mutate(dap = ifelse(dap == dap_first, "first", "last"))
+
+te1 <- 
+  te  %>% 
+  select(year, rot_trt, dap, depth, roots_kgha) %>%
+  group_by(rot_trt, dap, depth) %>% 
+  summarise(roots_kgha = mean(roots_kgha, na.rm = T)) %>% 
+  pivot_wider(names_from = dap, values_from = roots_kgha) %>% 
+  #--calculate min and maxes
+  mutate(roots_min = ifelse (last > first, last - first, 0),
+         roots_max = last)
+
+#--min and max
+te1 %>%
+  select(rot_trt, depth, roots_min, roots_max) %>% 
+  mutate(depthF = fct_inorder(depth),
+         depthFr = fct_rev(depthF)) %>% 
+  ggplot(aes(x = depthFr)) + 
+  geom_linerange(aes(ymin = roots_min, ymax = roots_max, color = rot_trt), 
+                 position = position_dodge(width = 0.2), 
+                 size = 3) + 
+  coord_flip() + 
+  labs(x = NULL,
+       y = "Range in possible maize root production (kg ha-1)")
+
+te1 %>%
+  select(rot_trt, depth, roots_min, roots_max) %>% 
+  mutate(depthF = fct_inorder(depth),
+         depthFr = fct_rev(depthF)) %>% 
+  ggplot(aes(x = depthFr)) + 
+  geom_linerange(aes(ymin = roots_min, ymax = roots_max, color = rot_trt), 
+                 position = position_dodge(width = 0.2)) + 
+  coord_flip()
+
+
+/#--what was the root mass at the end of the season?
 tot_end <- 
   mrs_rootdist_ml %>% 
   left_join(mrs_plotkey, relationship = "many-to-many") %>% 
