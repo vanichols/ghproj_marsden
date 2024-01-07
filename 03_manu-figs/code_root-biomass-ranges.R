@@ -33,7 +33,7 @@ my_th1 <- theme(panel.grid.major.x = element_blank(),
 
 my_ylab <- (expression(atop("Range in maize root production", paste("assuming 0% (left) to 100% (right) background root decay (kg "~ha^-1*")"))))
 
-my_ylab2 <- (expression("Range in maize root production (kg "~ha^-1*")"))
+my_ylab2 <- (expression(atop("Range in maize root production", paste("(kg "~ha^-1*")"))))
 
 
 # data --------------------------------------------------------------------
@@ -167,7 +167,10 @@ f2 <-
 
 
 f1 + f2 + 
-  plot_layout(widths = c(2, 1))
+  plot_layout(widths = c(2, 1)) +
+  plot_annotation(
+   caption = 'Range represents 0-100% assumed background root decomposition over growing season'
+  )
 
 ggsave("03_manu-figs/fig_rootmass-ranges.png")
 
