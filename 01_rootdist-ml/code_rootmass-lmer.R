@@ -3,6 +3,7 @@
 # notes: I'm getting less roots at the end of season compared to beg
 #        matt said try doing top layers, or doing it by layer
 # updated 7/28/2023
+# updated 1/10/2024 (run on end of season values only?)
 
 rm(list=ls())
 library(tidyverse)
@@ -19,9 +20,6 @@ library(emmeans)
 # matt stats --------------------------------------------------------------
 
 #--what did he do?!
-library(lme4)
-library(lmerTest)
-library(emmeans)
 
 p22 <- 
   mrs_rootdist_ml %>% 
@@ -61,9 +59,12 @@ d_depthP_stats <-
   mutate(depthN = paste0(year, rot_trt, depth))
     
 # write for matt to test - emailed him
-d_depthP %>% 
+d_end <- 
+  d_depthP %>% 
   select(year, date, dap, plot_id, block, rot_trt, depth, roots_kgha, totroots_kgha, proots) %>% 
-  filter(dap >100) %>% 
+  filter(dap >100) 
+
+d_end %>% 
   write_csv("01_rootdist-ml/dat_roots-maturity-4matt.csv")
 
 #--is the total biomass different by year*rot_trt at the end of the season? No

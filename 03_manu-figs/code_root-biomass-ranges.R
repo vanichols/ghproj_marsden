@@ -3,6 +3,7 @@
 # notes: I'm getting less roots at the end of season compared to beg
 #        matt said try doing top layers, or doing it by layer
 # updated: 7/31/2023, doing back of the envelope calcs
+# 1/12/2024 make figure w/ranges
 
 
 rm(list=ls())
@@ -33,7 +34,7 @@ my_th1 <- theme(panel.grid.major.x = element_blank(),
 
 my_ylab <- (expression(atop("Range in maize root production", paste("assuming 0% (left) to 100% (right) background root decay (kg "~ha^-1*")"))))
 
-my_ylab2 <- (expression(atop("Range in maize root production", paste("(kg "~ha^-1*")"))))
+my_ylab2 <- (expression(atop("Possible range in maize root production", paste("(kg "~ha^-1*")"))))
 
 
 # data --------------------------------------------------------------------
@@ -45,14 +46,17 @@ mrs_rootdist_ml %>%
          dap == max(dap))
 
 
-
-# Average the first/last sampling by depth 
+# Average the first sampling, and the last sampling by depth 
 # (one value per rot per year for ea sampling)
 #--year wasn't sig, so can justify combining year 
+#--Take difference to get 'minimum root production'
+#--Last sampling value represents 'maximum root production'
 
+#--get only the first and last sampling dates
 te <- 
   mrs_rootdist_ml %>% 
   left_join(mrs_plotkey, relationship = "many-to-many") %>% 
+  #--getting rid of plot by averaging
   group_by(year, rot_trt, dap, depth) %>% 
   summarise(roots_kgha = mean(roots_kgha, na.rm = T)) %>% 
   group_by(year) %>% 
@@ -61,6 +65,7 @@ te <-
   filter((dap == dap_first)|(dap == dap_last)) %>% 
   mutate(dap = ifelse(dap == dap_first, "first", "last"))
 
+#--average them to get one value for each rotation, depth, and sampling point
 te_avg <- 
   te %>%
   pivot_wider(names_from = dap, values_from = roots_kgha) %>% 
@@ -68,8 +73,8 @@ te_avg <-
   mutate(roots_min = ifelse (last > first, last - first, 0),
          roots_max = last) %>% 
   group_by(rot_trt, depth) %>% 
-  summarise(roots_min = mean(roots_min),
-            roots_max = mean(roots_max))
+  summarise(roots_min = mean(roots_min, na.rm = T),
+            roots_max = mean(roots_max, na.rm = T))
 
 te_tot <- 
   te_avg %>% 
@@ -127,15 +132,30 @@ te_all %>%
 
 # patchworked -------------------------------------------------------------
 
+
 f1 <- 
   te_avg %>% 
   mutate(depthF = fct_inorder(depth),
          depthFr = fct_rev(depthF),
          depth = "By Depth") %>% 
   ggplot(aes(x = depthFr)) + 
+  # geom_point(aes(y = roots_max, color = rot_trt), pch = 16,
+  #            position = position_dodge(width = 0.2),
+  #            size = 3) +
   geom_linerange(aes(ymin = roots_min, ymax = roots_max, color = rot_trt), 
                  position = position_dodge(width = 0.2), 
-                 size = 2) + 
+                 size = 3) + 
+  # geom_point(aes(y = roots_min, color = rot_trt), pch = 16,
+  #            position = position_dodge(width = 0.2),
+  #            size = 3) +
+  geom_text(aes(x = 4.35, y = 100), color = "gray70", size = 2.5,
+            label = "No background\nroot decomposition", check_overlap = T, fontface = "italic") +
+  geom_segment(aes(x = 4.15, y = 88, xend = 4.05, yend = 102), 
+               color = "gray", arrow = arrow(length = unit(0.1, "cm"), type = "closed")) +
+  geom_text(aes(x = 4.35, y = 350), color = "gray70", size = 2.5,
+            label = "100% background\nroot decomposition", check_overlap = T, fontface = "italic") +
+  geom_segment(aes(x = 4.15, y = 350, xend = 4.05, yend = 320), 
+               color = "gray", arrow = arrow(length = unit(0.1, "cm"), type = "closed")) +
   scale_color_manual(values = c(pnk1, dkbl1),
                      labels = c("Simple", "Complex")) + 
   guides(color = "none") +
@@ -146,18 +166,25 @@ f1 <-
        color = "Rotation") + 
     my_th1
 
+
 #--total biomass
 f2 <- 
   te_all %>%
   filter(depthF == "Total (0-60 cm)") %>% 
-  ggplot(aes(x = rot_trt)) + 
+  ggplot(aes(x = rot_trt, color = rot_trt)) +
+  # geom_point(aes(y = roots_min), pch = 16,
+  #            position = position_dodge(width = 0.2),
+  #            size = 3) +
+  # geom_point(aes(y = roots_max), pch = 16,
+  #            position = position_dodge(width = 0.2),
+  #            size = 3) +
   geom_linerange(aes(ymin = roots_min, ymax = roots_max, 
                      color = rot_trt), 
                  position = position_dodge(width = 0.2), 
-                 size = 3) + 
+                 size = 4) + 
   scale_color_manual(values = c(pnk1, dkbl1),
                      labels = c("Simple", "Complex")) + 
-  guides(fill = F, color = F) +
+  guides(fill = "none", color = "none") +
   labs(x = NULL,
        y = my_ylab2,
        color = "Rotation",
@@ -167,12 +194,12 @@ f2 <-
 
 
 f1 + f2 + 
-  plot_layout(widths = c(2, 1)) +
-  plot_annotation(
-   caption = 'Range represents 0-100% assumed background root decomposition over growing season'
-  )
+  plot_layout(widths = c(2, 1)) #+
+  # plot_annotation(
+  #  caption = 'Range represents 0-100% assumed background root decomposition over growing season'
+  # )
 
-ggsave("03_manu-figs/fig_rootmass-ranges.png")
+ggsave("03_manu-figs/fig_rootmass-ranges.png", width = 6.93, height = 4.12)
 
 
 
@@ -183,16 +210,16 @@ te_avg %>%
   mutate(depthF = fct_inorder(depth),
          depthFr = fct_rev(depthF)) %>%
   ggplot(aes(x = depthFr, color = rot_trt)) +
-  geom_point(aes(y = roots_min), pch = 1,
+  geom_point(aes(y = roots_min), pch = 16,
              position = position_dodge(width = 0.2),
-             size = 2) +
+             size = 3) +
   geom_point(aes(y = roots_max), pch = 16,
              position = position_dodge(width = 0.2),
-             size = 2) +
+             size = 3) +
   geom_linerange(
     aes(ymin = roots_min, ymax = roots_max, color = rot_trt),
     position = position_dodge(width = 0.2),
-    size = 1) +
+    size = 3) +
   scale_color_manual(values = c(pnk1, dkbl1),
                      labels = c("Simple", "Complex")) +
   coord_flip() +

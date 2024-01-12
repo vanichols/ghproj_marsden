@@ -2,6 +2,7 @@
 ##
 ## Date: aug 10 2021
 ## updated: sept 15 2021 to use matt's JMP results
+## updated: 1/12/2024 to try a figure presenting the end of season results only
 
 rm(list = ls())
 library(tidyverse)
@@ -19,6 +20,10 @@ my_ylab <- (expression(atop("Root mass at maize maturity", paste("relative to ro
 dat <- 
   read_csv("01_rootdist-ml/manual_mattJMPres-diff.csv") 
 
+dat2 <- 
+  read_csv("01_rootdist-ml/manual_mattJMPres-end.csv")
+
+
 dat_tot <- 
   dat %>% 
   #--can I do this?
@@ -27,6 +32,15 @@ dat_tot <-
             se = mean(se)) %>% 
   mutate(depth = "Total (0-60 cm)")
 
+dat_tot2 <- 
+  dat2 %>% 
+  #--can I do this?
+  group_by(rot_trt) %>% 
+  summarise(mean = sum(mean),
+            se = mean(se)) %>% 
+  mutate(depth = "Total (0-60 cm)")
+
+
 dat_tot %>% 
   select(rot_trt, mean) %>% 
   pivot_wider(names_from = rot_trt, values_from = mean) %>% 
@@ -34,6 +48,8 @@ dat_tot %>%
   mutate(diff = x2y - x4y,
          rel = diff/x2y,
          rat = x4y/x2y)
+
+# on difference, assuming NONE of the bkgd roots decomposed -----------------------------------------------------------
 
 dat %>% 
   bind_rows(dat_tot) %>% 
@@ -67,6 +83,40 @@ dat %>%
 
 ggsave("03_manu-figs/fig_rootmass-JMP.png", width = 6.93, height = 4.12)
 
+
+# on end, assume 100% of bkgd roots decomposed ----------------------------
+
+dat2 %>% 
+  bind_rows(dat_tot2) %>% 
+  mutate(rot_trt = ifelse(rot_trt == "2y", "Simple", "Complex"),
+         rot_trt = factor(rot_trt, levels = c("Simple", "Complex")),
+         depth = fct_inorder(depth)) %>% 
+  ggplot(aes(rot_trt, mean)) + 
+  geom_col(aes(fill = rot_trt), color= "black") +
+  geom_linerange(aes(x = rot_trt, ymin = mean - se, 
+                     ymax = mean + se)) +
+  scale_color_manual(values = c(pnk1, dkbl1),
+                     labels = c("Simple", "Complex")) + 
+  scale_fill_manual(values = c(pnk1, dkbl1),
+                    labels = c("Simple", "Complex")) + 
+  guides(fill = F, color = F) +
+  labs(x = NULL,
+       y = my_ylab,
+       color = "Rotation",
+       fill = "Rotation") +
+  facet_grid(.~depth) + 
+  theme(panel.grid.major.x = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        #axis.text.x = element_blank(), 
+        #axis.ticks.x = element_blank(),
+        legend.position = "top",
+        legend.background = element_rect(color = "black"),
+        legend.title = element_text(size = rel(1.1)),
+        legend.text = element_text(size = rel(1.1)),
+        strip.text = element_text(size = rel(1.1)),
+        strip.background = element_blank())
+
+ggsave("03_manu-figs/fig_rootmass-JMP.png", width = 6.93, height = 4.12)
 
 
 
