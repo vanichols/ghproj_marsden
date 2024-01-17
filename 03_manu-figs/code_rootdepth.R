@@ -51,7 +51,7 @@ fig_dat <-
                 rootdepth_se = rootdepth_sd/sqrt(4-1))
   ) %>% 
   filter(doy < 240) %>% 
-  mutate(rot_trt2 = ifelse(rot_trt == "2y", "Simple", "Complex")) %>% 
+  mutate(rot_trt2 = ifelse(rot_trt == "2y", "Short", "Extended")) %>% 
   left_join(doy_to_cum_gdd)
 
 fig_dat_block <- 
@@ -60,7 +60,7 @@ fig_dat_block <-
   group_by(year, doy, date, rot_trt, block) %>% 
   summarise(rootdepth_cm = mean(rootdepth_cm, na.rm = T)) %>% 
   filter(doy < 240) %>% 
-  mutate(rot_trt2 = ifelse(rot_trt == "2y", "Simple", "Complex")) %>% 
+  mutate(rot_trt2 = ifelse(rot_trt == "2y", "Short", "Extended")) %>% 
   left_join(doy_to_cum_gdd)
 
 
@@ -76,13 +76,13 @@ fig_dat %>%
   geom_line(aes(color = rot_trt, linetype = rot_trt), size = 1.5) +
   geom_point(size = 4, aes(fill = rot_trt, pch = rot_trt)) +
   scale_color_manual(values = c(pnk1, dkbl1),
-                     labels = c("Simple 2-year", "Complex 4-year")) + 
+                     labels = c("Short 2-year", "Extended 4-year")) + 
   scale_fill_manual(values = c(pnk1, dkbl1),
-                    labels = c("Simple 2-year", "Complex 4-year")) + 
+                    labels = c("Short 2-year", "Extended 4-year")) + 
   scale_linetype_manual(values = c("dashed", "solid"),
-                        labels = c("Simple 2-year", "Complex 4-year")) + 
+                        labels = c("Short 2-year", "Extended 4-year")) + 
   scale_shape_manual(values = c(22, 24),
-                     labels = c("Simple 2-year", "Complex 4-year")) +
+                     labels = c("Short 2-year", "Extended 4-year")) +
   facet_grid(.~ year, scales = "free") +
   myth +
   scale_y_reverse() +
@@ -120,13 +120,13 @@ ggplot() +
              size = 1.5, alpha = 0.4, stroke = 0.5) +
   facet_grid(.~ year, scales = "free") +
   scale_color_manual(values = c(pnk1, dkbl1),
-                     labels = c("Simple 2-year", "Complex 4-year")) + 
+                     labels = c("Short 2-year", "Extended 4-year")) + 
   scale_fill_manual(values = c(pnk1, dkbl1),
-                    labels = c("Simple 2-year", "Complex 4-year")) + 
+                    labels = c("Short 2-year", "Extended 4-year")) + 
   scale_linetype_manual(values = c("dashed", "solid"),
-                        labels = c("Simple 2-year", "Complex 4-year")) + 
+                        labels = c("Short 2-year", "Extended 4-year")) + 
   scale_shape_manual(values = c(22, 24),
-                     labels = c("Simple 2-year", "Complex 4-year")) +
+                     labels = c("Short 2-year", "Extended 4-year")) +
   myth +
   scale_y_reverse() +
   labs(x = "\nCumulative growing degree days (base 10 deg C)",
@@ -205,15 +205,15 @@ ggplot() +
     color = "gray50") +
   facet_grid(.~ year, scales = "free") +
   scale_color_manual(values = c(pnk1, dkbl1),
-                     labels = c("Simple 2-year", "Complex 4-year")) + 
+                     labels = c("Short 2-year", "Extended 4-year")) + 
   scale_fill_manual(values = c(pnk1, dkbl1),
-                    labels = c("Simple 2-year", "Complex 4-year")) + 
+                    labels = c("Short 2-year", "Extended 4-year")) + 
   # scale_linetype_manual(values = c("solid", "solid"),
-  #                       labels = c("Simple 2-year", "Complex 4-year")) + 
+  #                       labels = c("Short 2-year", "Extended 4-year")) + 
   scale_size_manual(values = c(1, 1.5),
-                        labels = c("Simple 2-year", "Complex 4-year")) +
+                        labels = c("Short 2-year", "Extended 4-year")) +
   scale_shape_manual(values = c(22, 24),
-                     labels = c("Simple 2-year", "Complex 4-year")) +
+                     labels = c("Short 2-year", "Extended 4-year")) +
   myth +
   scale_y_reverse() +
   labs(x = "\nCumulative growing degree days (base 10 deg C)",
