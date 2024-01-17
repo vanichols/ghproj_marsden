@@ -35,13 +35,28 @@ my_th1 <- theme(panel.grid.major.x = element_blank(),
 
 draw <- 
   read_excel("00_lazicki-data-explore/lazicki-root-data.xlsx", na = ".") %>% 
-  filter(!is.na(lengthpcm3soil),
-         crop %in% c("C"),
-         system %in% c(2,4))
+  filter(!is.na(lengthpcm3soil))
+
+
+
+# alfalfa -----------------------------------------------------------------
+
+draw %>% 
+  mutate(depth = ifelse(depth == 0, "0-10cm", "10-20cm")) %>% 
+  filter(system == 4,
+         crop == "A") %>% 
+  
+         
+
+
+# corn --------------------------------------------------------------------
 
 #--simplify
 d <- 
   draw %>% 
+  filter(
+    crop %in% c("C"),
+    system %in% c(2,4)) %>% 
   mutate(depth = ifelse(depth == 0, "0-10cm", "10-20cm"),
          rot_trt = ifelse(system == 2, "2y", "4y"),
          year = 2009) %>%  
