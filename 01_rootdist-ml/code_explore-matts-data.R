@@ -3,6 +3,7 @@
 # notes: I'm getting less roots at the end of season compared to beg
 #        matt said try doing top layers, or doing it by layer
 # updated: 7/31/2023, doing back of the envelope calcs
+#          1/16/2024, does combining all of the data simplify the story at all?
 
 
 rm(list=ls())
@@ -24,7 +25,20 @@ mrs_rootdist_ml %>%
   filter(plot_id == "2020_22",
          dap == max(dap))
 
+#--how many times did we collect root biomass? 5 in 
+mrs_rootdist_ml %>% 
+  select(date) %>% 
+  distinct()
 
+mrs_rootdist_ml %>%
+  group_by(year) %>% 
+  mutate(dap_min = min(dap)) %>% 
+  filter(dap != dap_min) %>% 
+  mutate(depthF = fct_rev(depth)) %>%
+  left_join(mrs_plotkey) %>% 
+  ggplot(aes(depthF, roots_kgha)) + 
+    geom_boxplot(aes(fill = rot_trt)) + 
+  coord_flip()
 
 # how close are the above ground and root measurements date wise? ---------
 

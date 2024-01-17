@@ -54,13 +54,13 @@ fig_ylds <-
   scale_x_continuous(breaks = c(seq(from = 2013, to = 2020, by = 1)),
                      ) +
   scale_color_manual(values = c(pnk1, dkbl1),
-                     labels = c("Simple 2-year", "Complex 4-year")) + 
+                     labels = c("Short 2-year", "Extended 4-year")) + 
   scale_fill_manual(values = c(pnk1, dkbl1),
-                    labels = c("Simple 2-year", "Complex 4-year")) + 
+                    labels = c("Short 2-year", "Extended 4-year")) + 
   scale_linetype_manual(values = c("dashed", "solid"),
-                        labels = c("Simple 2-year", "Complex 4-year")) + 
+                        labels = c("Short 2-year", "Extended 4-year")) + 
   scale_shape_manual(values = c(22, 24),
-                     labels = c("Simple 2-year", "Complex 4-year")) +
+                     labels = c("Short 2-year", "Extended 4-year")) +
   labs(x = "Year",
        y = mghalab,
        fill = "Rotation",
@@ -182,8 +182,8 @@ fig_wea <-
                                "Yield data, growth analysis, root data" = "black")) +
                                 #ltbl1, bl2)) + 
   guides(size = "none") +
-  labs(size = expression("Yield advantage of complex rotation ("~Mg~ha^-1*")"),
-       #size = (expression(atop("Yield advantage\nof complex rotation", paste("(Mg "~ha^-1*")")))),
+  labs(size = expression("Yield advantage of Extended rotation ("~Mg~ha^-1*")"),
+       #size = (expression(atop("Yield advantage\nof Extended rotation", paste("(Mg "~ha^-1*")")))),
        color = "Measurement set",
        fill = "Measurement set",
        x = "Growing season precipitation (mm)",
@@ -204,7 +204,7 @@ fig_wea
 # pathcwork ---------------------------------------------------------------
 
 library(patchwork)
-set.seed(9)
+set.seed(19)
 fig_ylds + fig_wea + plot_layout(widths = c(1.5, 1))
 
 ggsave("03_manu-figs/fig_yields-wea-gs.png", width = 9.15, height = 4.9)
