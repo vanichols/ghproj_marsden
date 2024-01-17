@@ -40,6 +40,50 @@ mrs_rootdist_ml %>%
     geom_boxplot(aes(fill = rot_trt)) + 
   coord_flip()
 
+# CV for values that 'should' be the same
+
+#--assign sampling number
+sn <- 
+  mrs_rootdist_ml %>% 
+  select(year, dap) %>% 
+  unique() %>% 
+  group_by(year) %>% 
+  mutate(sampling_nu = 1:n())
+
+
+mrs_rootdist_ml %>% 
+  left_join(mrs_plotkey) %>%
+  left_join(sn) %>% 
+  group_by(year, sampling_nu, depth, rot_trt) %>% 
+  summarise(mn = mean(roots_kgha, na.rm = T),
+            sd = sd(roots_kgha, na.rm = T)) %>% 
+  mutate(cv = sd/mn * 100) %>% 
+  group_by(year) %>% 
+  filter(sampling_nu == max(sampling_nu)) %>% 
+  ggplot(aes(depth, cv, color = rot_trt)) + 
+  geom_point()
+
+
+# what are the diffs? -----------------------------------------------------
+
+mrs_rootdist_ml %>% 
+  group_by(year) %>% 
+  mutate(dap_max = max(dap)) %>% 
+  filter(dap == dap_max) %>%
+  left_join(mrs_plotkey) %>% 
+  group_by(depth, rot_trt) %>% 
+  summarise(roots_kgha = mean(roots_kgha, na.rm = T)) %>% 
+  pivot_wider(names_from = rot_trt, values_from = roots_kgha) %>% 
+  janitor::clean_names() %>% 
+  mutate(x2minx4 = abs(x2y - x4y),
+         x2minx4/(x2y+x4y)/2)
+
+
+# power analysis ----------------------------------------------------------
+library(pwr)
+
+pwr.t.test(n=8, d=0.1, sig.level=.1, alternative="greater")
+
 # how close are the above ground and root measurements date wise? ---------
 
 root_dates <- 

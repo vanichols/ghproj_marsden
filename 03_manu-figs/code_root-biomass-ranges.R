@@ -125,7 +125,7 @@ te_all %>%
        fill = "Rotation") +
   theme(axis.text.x = element_text(angle = 90)) +
   facet_grid(.~depth) + 
-  my_th
+  my_th1
   
 #--try patchworking the depth one with the total one
 
@@ -148,17 +148,18 @@ f1 <-
   # geom_point(aes(y = roots_min, color = rot_trt), pch = 16,
   #            position = position_dodge(width = 0.2),
   #            size = 3) +
-  geom_text(aes(x = 4.35, y = 100), color = "gray70", size = 2.5,
+  geom_text(aes(x = 4.5, y = 101), color = "gray70", size = 2.5,
             label = "No background\nroot decomposition", check_overlap = T, fontface = "italic") +
-  geom_segment(aes(x = 4.15, y = 88, xend = 4.05, yend = 102), 
+  geom_segment(aes(x = 4.25, y = 101, xend = 4.15, yend = 101), 
                color = "gray", arrow = arrow(length = unit(0.1, "cm"), type = "closed")) +
-  geom_text(aes(x = 4.35, y = 350), color = "gray70", size = 2.5,
+  geom_text(aes(x = 4.5, y = 320), color = "gray70", size = 2.5,
             label = "100% background\nroot decomposition", check_overlap = T, fontface = "italic") +
-  geom_segment(aes(x = 4.15, y = 350, xend = 4.05, yend = 320), 
+  geom_segment(aes(x = 4.25, y = 320, xend = 4.15, yend = 320), 
                color = "gray", arrow = arrow(length = unit(0.1, "cm"), type = "closed")) +
   scale_color_manual(values = c(pnk1, dkbl1),
                      labels = c("Simple", "Complex")) + 
   guides(color = "none") +
+  expand_limits(x = c(1, 5)) +
   coord_flip() +
   facet_grid(.~depth) +
   labs(x = NULL,
@@ -166,6 +167,7 @@ f1 <-
        color = "Rotation") + 
     my_th1
 
+f1
 
 #--total biomass
 f2 <- 

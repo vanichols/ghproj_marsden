@@ -38,17 +38,6 @@ draw <-
   filter(!is.na(lengthpcm3soil))
 
 
-
-# alfalfa -----------------------------------------------------------------
-
-draw %>% 
-  mutate(depth = ifelse(depth == 0, "0-10cm", "10-20cm")) %>% 
-  filter(system == 4,
-         crop == "A") %>% 
-  
-         
-
-
 # corn --------------------------------------------------------------------
 
 #--simplify
