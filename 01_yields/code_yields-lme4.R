@@ -38,6 +38,7 @@ em_m0 %>%
   janitor::clean_names() %>% 
   mutate(pct = (x4y/x2y)*100)
 
+11.9-9.89
 
 em_m0 %>% 
   broom::tidy() %>% 
