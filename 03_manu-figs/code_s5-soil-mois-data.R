@@ -199,5 +199,5 @@ sw %>%
         strip.text = element_text(size = rel(1.2)),
         strip.background = element_blank()) 
 
-ggsave("03_manu-figs/sfig_soil-mois.png", height = 6, width = 7.4)
+ggsave("03_manu-figs/s5_soil-mois.png", height = 6, width = 7.4)
 

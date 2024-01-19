@@ -17,11 +17,13 @@ all_years <- tibble(year = c(2013, 2014, 2018, 2019, 2020))
 all_trts <- tibble(rot_trt = c("2y", "4y"))
 
 #--bm over time, growth over time
-gr <- read_csv("01_growth-analysis/dat_growth-analysis.csv") %>% 
+gr <- 
+  read_csv("01_growth-analysis/dat_growth-analysis.csv") %>% 
   pivot_longer(mass_gpl:rel_gr) %>% 
-  mutate(name = recode(name,  
-                       mass_gpl = "Plant biomass",
-                       abs_gr = "Growth rate")) %>% 
+  mutate(name = case_when(
+    name == "mass_gpl" ~ "Plant biomass",
+    name == "abs_gr" ~ "Growth rate",
+    TRUE ~ name)) %>% 
   filter(name != "rel_gr") %>% 
   rename("year" = yearF)
 
@@ -71,7 +73,7 @@ f_ylds <-
   geom_point(aes(thing, x2y), color = pnk1, size = 3) +
   facet_grid(name ~ year, labeller = label_wrap_gen(width = 15)) + 
   scale_fill_manual(values = c(pnk1, dkbl1),
-                    labels = c("Simple", "Complex")) + 
+                    labels = c("Short", "Extended")) + 
   scale_color_manual(values = c(pnk1, dkbl1)) + 
   #  scale_y_continuous(limits = c(0, 16)) +
   scale_y_continuous(expand = expansion(add = 0.5)) +
@@ -82,7 +84,7 @@ f_ylds <-
         axis.ticks.x = element_blank(),
         legend.position = "bottom",
         legend.background = element_rect(color = "black")) + 
-  guides(color = F) 
+  guides(color = "none") 
 
 
 f_ylds
@@ -135,15 +137,15 @@ hilab <- (expression(atop("grams grain", paste("(grams biomass)"^-1))))
 
 f_hi <- 
   hi %>% 
-  mutate(rot_trt = ifelse(rot_trt == "2y", "Simple", "Complex"),
+  mutate(rot_trt = ifelse(rot_trt == "2y", "Short", "Extended"),
          rot_trt = as.factor(rot_trt),
          rot_trt = fct_rev(rot_trt)) %>% 
   ggplot(aes(rot_trt, value, fill = rot_trt)) + 
   stat_summary(geom = "bar", width = 0.5, color = "black") + 
   #stat_summary(geom = "linerange") +
   facet_grid(name ~ year, labeller = label_wrap_gen(width = 10)) + 
-  scale_fill_manual(values = c("Simple" = pnk1,
-                               "Complex" = dkbl1)) + 
+  scale_fill_manual(values = c("Short" = pnk1,
+                               "Extended" = dkbl1)) + 
   guides(color = F) + 
   labs(x = NULL,
        y = hilab,
@@ -164,7 +166,7 @@ f_yc <-
   crossing(all_trts) %>% 
   left_join(yc) %>%
   fill(name, .direction = "up") %>% 
-  mutate(rot_trt = ifelse(rot_trt == "2y", "Simple", "Complex"),
+  mutate(rot_trt = ifelse(rot_trt == "2y", "Short", "Extended"),
          rot_trt = as.factor(rot_trt),
          rot_trt = fct_rev(rot_trt)) %>% 
   ggplot(aes(rot_trt, value, color = rot_trt)) + 
@@ -186,4 +188,4 @@ f_yc
 f_ylds / f_bm / f_gr / f_hi + f_yc + 
   plot_layout(guides = "collect") & theme(legend.position = "bottom")
 
-ggsave("03_manu-figs/fig_select-years.png")
+ggsave("03_manu-figs/s2_multi-panel.png")

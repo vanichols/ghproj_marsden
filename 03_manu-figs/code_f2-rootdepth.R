@@ -69,7 +69,7 @@ fig_preds <-
 
 # fig ---------------------------------------------------------------------
 
-#--need to fix date axis
+#--without smoothing...looks terrible
 
 fig_dat %>% 
   ggplot(aes(date, rootdepth_cm)) + 
@@ -103,49 +103,6 @@ fig_dat %>%
         legend.text = element_text(size = rel(1)),
         legend.title = element_text(size = rel(1)))
 
-
-
-ggsave("03_manu-figs/fig_rootdepth-by-year.png", width = 7)
-
-
-# fig with preds ----------------------------------------------------------
-
-ggplot() + 
-  geom_line(data = fig_preds, 
-            aes(cum_gdd, pred, color = rot_trt, linetype = rot_trt), 
-            size = 1.5) +
-  geom_point(
-    data = fig_dat_block,
-    aes(cum_gdd, rootdepth_cm, fill = rot_trt, pch = rot_trt),
-             size = 1.5, alpha = 0.4, stroke = 0.5) +
-  facet_grid(.~ year, scales = "free") +
-  scale_color_manual(values = c(pnk1, dkbl1),
-                     labels = c("Short 2-year", "Extended 4-year")) + 
-  scale_fill_manual(values = c(pnk1, dkbl1),
-                    labels = c("Short 2-year", "Extended 4-year")) + 
-  scale_linetype_manual(values = c("dashed", "solid"),
-                        labels = c("Short 2-year", "Extended 4-year")) + 
-  scale_shape_manual(values = c(22, 24),
-                     labels = c("Short 2-year", "Extended 4-year")) +
-  myth +
-  scale_y_reverse() +
-  labs(x = "\nCumulative growing degree days (base 10 deg C)",
-       y = "Maximum maize rooting depth (cm)\n",
-       fill = "Rotation",
-       color = "Rotation",
-       shape = "Rotation",
-       linetype = "Rotation") + 
-  theme(#legend.position = "top",
-    #legend.direction = "horizontal",
-    axis.title = element_text(size = rel(1.2)),
-    legend.position = c(0.15, 0.15),
-    legend.background = element_rect(color = "black"),
-    legend.title.align = 0.5,
-    legend.text = element_text(size = rel(1)),
-    legend.title = element_text(size = rel(1)))
-
-
-ggsave("03_manu-figs/fig_rootdepth-by-year-fitted.png", width = 7)
 
 
 
@@ -188,7 +145,7 @@ phen_for_fig <-
 
 ggplot() + 
   geom_line(data = fig_preds, 
-            aes(cum_gdd, pred, color = rot_trt, size = rot_trt), 
+            aes(cum_gdd, pred, color = rot_trt, size = rot_trt, linetype = rot_trt), 
             #size = 1.5
             ) +
   geom_point(
@@ -204,33 +161,39 @@ ggplot() +
         check_overlap = T),
     color = "gray50") +
   facet_grid(.~ year, scales = "free") +
+  scale_linetype_manual(values = c("dashed", "solid"),
+                     labels = c("Short rotation", "Extended rotation")) + 
   scale_color_manual(values = c(pnk1, dkbl1),
-                     labels = c("Short 2-year", "Extended 4-year")) + 
+                     labels = c("Short rotation", "Extended rotation")) +
   scale_fill_manual(values = c(pnk1, dkbl1),
-                    labels = c("Short 2-year", "Extended 4-year")) + 
+                    labels = c("Short rotation", "Extended rotation")) +
   # scale_linetype_manual(values = c("solid", "solid"),
   #                       labels = c("Short 2-year", "Extended 4-year")) + 
   scale_size_manual(values = c(1, 1.5),
-                        labels = c("Short 2-year", "Extended 4-year")) +
+                    labels = c("Short rotation", "Extended rotation")) +
   scale_shape_manual(values = c(22, 24),
-                     labels = c("Short 2-year", "Extended 4-year")) +
+                     labels = c("Short rotation", "Extended rotation")) +
   myth +
   scale_y_reverse() +
   labs(x = "\nCumulative growing degree days (base 10 deg C)",
        y = "Maize rooting depth (cm)\n",
-       fill = "Rotation",
-       color = "Rotation",
-       size = "Rotation",
-       shape = "Rotation",
-       linetype = "Rotation") + 
+       fill = NULL,
+       color = NULL,
+       size = NULL,
+       shape = NULL,
+       linetype = NULL
+       ) + 
+  guides(shape = guide_legend(override.aes = list(size = 2.5))) + #--makes dots in legend bigger
   theme(#legend.position = "top",
     #legend.direction = "horizontal",
     axis.title = element_text(size = rel(1.2)),
     legend.position = c(0.15, 0.15),
-    legend.background = element_rect(color = "black"),
+    legend.background = element_rect(fill = "transparent"),
+    #legend.background = element_rect(color = "black"),
+    legend.key.width=unit(2,"cm"), #--to make sure dashed line shows up
     legend.title.align = 0.5,
     legend.text = element_text(size = rel(1)),
     legend.title = element_text(size = rel(1)))
 
 
-ggsave("03_manu-figs/fig_rootdepth-by-year-fitted-phen.png", width = 7)
+ggsave("03_manu-figs/f2_rootdepth-by-year-fitted-phen.png", width = 7)

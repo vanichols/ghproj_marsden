@@ -87,8 +87,8 @@ te_tot <-
 te_all <- 
   te_avg %>% 
   bind_rows(te_tot) %>% 
-  mutate(rot_trt = ifelse(rot_trt == "2y", "Simple", "Complex"),
-         rot_trt = factor(rot_trt, levels = c("Simple", "Complex")),
+  mutate(rot_trt = ifelse(rot_trt == "2y", "Short rotation", "Extended rotation"),
+         rot_trt = factor(rot_trt, levels = c("Short rotation", "Extended rotation")),
          depthF = fct_inorder(depth))
   
 
@@ -115,9 +115,9 @@ te_all %>%
                  position = position_dodge(width = 0.2), 
                  size = 3) + 
   scale_color_manual(values = c(pnk1, dkbl1),
-                     labels = c("Simple", "Complex")) + 
+                     labels = c("Short rotation", "Extended rotation")) + 
   scale_fill_manual(values = c(pnk1, dkbl1),
-                    labels = c("Simple", "Complex")) + 
+                    labels = c("Short rotation", "Extended rotation")) + 
   guides(fill = F, color = F) +
   labs(x = NULL,
        y = my_ylab,
@@ -157,7 +157,7 @@ f1 <-
   geom_segment(aes(x = 4.25, y = 320, xend = 4.15, yend = 320), 
                color = "gray", arrow = arrow(length = unit(0.1, "cm"), type = "closed")) +
   scale_color_manual(values = c(pnk1, dkbl1),
-                     labels = c("Simple", "Complex")) + 
+                     labels = c("Short rotation", "Extended rotation")) + 
   guides(color = "none") +
   expand_limits(x = c(1, 5)) +
   coord_flip() +
@@ -172,7 +172,9 @@ f1
 #--total biomass
 f2 <- 
   te_all %>%
-  filter(depthF == "Total (0-60 cm)") %>% 
+  filter(depthF == "Total (0-60 cm)") %>%
+  mutate(rot_trt = ifelse(rot_trt == "Simple", "Short\nrotation", "Extended\nrotation"),
+         rot_trt = fct_inorder(rot_trt)) %>% 
   ggplot(aes(x = rot_trt, color = rot_trt)) +
   # geom_point(aes(y = roots_min), pch = 16,
   #            position = position_dodge(width = 0.2),
@@ -185,7 +187,7 @@ f2 <-
                  position = position_dodge(width = 0.2), 
                  size = 4) + 
   scale_color_manual(values = c(pnk1, dkbl1),
-                     labels = c("Simple", "Complex")) + 
+                     labels = c("Short rotation", "Extended rotation")) + 
   guides(fill = "none", color = "none") +
   labs(x = NULL,
        y = my_ylab2,
@@ -194,6 +196,7 @@ f2 <-
   facet_grid(.~depth) + 
   my_th1
 
+f2
 
 f1 + f2 + 
   plot_layout(widths = c(2, 1)) #+
@@ -201,7 +204,7 @@ f1 + f2 +
   #  caption = 'Range represents 0-100% assumed background root decomposition over growing season'
   # )
 
-ggsave("03_manu-figs/fig_rootmass-ranges.png", width = 6.93, height = 4.12)
+ggsave("03_manu-figs/f3_rootmass-ranges.png", width = 6.93, height = 4.12)
 
 
 
@@ -223,7 +226,7 @@ te_avg %>%
     position = position_dodge(width = 0.2),
     size = 3) +
   scale_color_manual(values = c(pnk1, dkbl1),
-                     labels = c("Simple", "Complex")) +
+                     labels = c("Short rotation", "Extended rotation")) +
   coord_flip() +
   labs(x = "Soil depth range (cm)",
        y = my_ylab,
@@ -236,17 +239,17 @@ te_avg %>%
 
 dat %>% 
   bind_rows(dat_tot) %>% 
-  mutate(rot_trt = ifelse(rot_trt == "2y", "Simple", "Complex"),
-         rot_trt = factor(rot_trt, levels = c("Simple", "Complex")),
+  mutate(rot_trt = ifelse(rot_trt == "2y", "Short rotation", "Extended rotation"),
+         rot_trt = factor(rot_trt, levels = c("Short rotation", "Extended rotation")),
          depth = fct_inorder(depth)) %>% 
   ggplot(aes(rot_trt, mean)) + 
   geom_col(aes(fill = rot_trt), color= "black") +
   geom_linerange(aes(x = rot_trt, ymin = mean - se, 
                      ymax = mean + se)) +
   scale_color_manual(values = c(pnk1, dkbl1),
-                     labels = c("Simple", "Complex")) + 
+                     labels = c("Short rotation", "Extended rotation")) + 
   scale_fill_manual(values = c(pnk1, dkbl1),
-                    labels = c("Simple", "Complex")) + 
+                    labels = c("Short rotation", "Extended rotation")) + 
   guides(fill = F, color = F) +
   labs(x = NULL,
        y = my_ylab,

@@ -1,6 +1,7 @@
 # try to do growth analysis
 # goal: calc root to shoot
 # started 8/19/2022
+#--ran through/renamed: 1/19/2024
 
 library(maRsden)
 library(tidyverse)
@@ -73,15 +74,17 @@ rs_ratio %>%
   geom_point()
 
 
-rs_ratio %>% 
+rs_ratio %>%
+  mutate(rot_trt = ifelse(rot_trt == "2y", "Short rotation", "Extended rotation")) %>% 
   ggplot(aes(rot_trt, rs_ratio, color = rot_trt)) + 
-  geom_point() +
-  stat_summary(size = 2) + 
-  scale_color_manual(values = c(pnk1, dkbl1),
-                     labels = c("2y", "4y")) + 
+  geom_point( show.legend = F) +
+  stat_summary(size = 2, show.legend = F) + 
+  scale_color_manual(values = c(pnk1, dkbl1)) + 
     facet_grid(.~yearF) + 
-  labs(x = "Rotation treatment", 
-       y = "Root to shoot mass ratio")
+  labs(x = NULL,
+       y = "Root to shoot mass ratio",
+       color = NULL,
+       title = "Ratio of maize root biomass from 0-60 cm to maximum aboveground maize biomass")
 
-ggsave("03_manu-figs/sfig_root-to-shoot.png")
+ggsave("03_manu-figs/s3_root-to-shoot.png")
   

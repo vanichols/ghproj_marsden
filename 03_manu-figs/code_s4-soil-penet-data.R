@@ -54,39 +54,39 @@ pd %>%
 # all tog? ----------------------------------------------------------------
 
 #--facet grid
-pd %>% 
-  mutate(cult_val = 15.24,
-         mold_val = 22.86,
-         cult_lab = ifelse(year_num == 2018 & samp_nice == "planting", "Cultivation at planting", NA),
-         mold_lab = ifelse(year_num == 2018 & samp_nice == "planting", "Moldboard previous fall,\ncomplex only", NA)) %>% 
-  ggplot() + 
-  geom_vline(aes(xintercept = cult_val), color = "gray80", size = 2) +
-  geom_text(aes(x = 13, y = 5, label = cult_lab),
-            fontface = "italic", check_overlap = T, hjust = 1) +
-  geom_vline(aes(xintercept = mold_val), color = "gray80", size = 2) +
-  geom_text(aes(x = 22.5, y = 5, label = mold_lab),
-            fontface = "italic", check_overlap = T, hjust = 1) +
-  geom_jitter(aes(x = depth_cm, y = resis_Mpa, color = rot_trt),
-              width = 0.5, alpha = 0.05, pch = 19, size = 0.6) + 
-  geom_line(aes(x = depth_cm, y = Estimate, color = rot_trt)) + 
-  geom_ribbon(aes(x = depth_cm, ymin = Q2.5, ymax = Q97.5, fill = rot_trt, color = NULL), 
-              alpha = 0.4) + 
-  scale_color_manual(values = c(pnk1, dkbl1),
-                     labels = c("Simple", "Complex")) + 
-  scale_fill_manual(values = c(pnk1, dkbl1),
-                    labels = c("Simple", "Complex")) + 
-  scale_x_reverse() +
-  labs(y = "Soil resistance (MPa)",
-       x = "Soil depth (cm)",
-       fill = "Rotation",
-       color = "Rotation") +
-  coord_flip() + 
-  facet_grid(year_num ~ samp_nice) + 
-  mt + 
-  theme(legend.position = "bottom")
+# pd %>% 
+#   mutate(cult_val = 15.24,
+#          mold_val = 22.86,
+#          cult_lab = ifelse(year_num == 2018 & samp_nice == "planting", "Cultivation at planting", NA),
+#          mold_lab = ifelse(year_num == 2018 & samp_nice == "planting", "Moldboard previous fall,\nExtended only", NA)) %>% 
+#   ggplot() + 
+#   geom_vline(aes(xintercept = cult_val), color = "gray80", size = 2) +
+#   geom_text(aes(x = 13, y = 5, label = cult_lab),
+#             fontface = "italic", check_overlap = T, hjust = 1) +
+#   geom_vline(aes(xintercept = mold_val), color = "gray80", size = 2) +
+#   geom_text(aes(x = 22.5, y = 5, label = mold_lab),
+#             fontface = "italic", check_overlap = T, hjust = 1) +
+#   geom_jitter(aes(x = depth_cm, y = resis_Mpa, color = rot_trt),
+#               width = 0.5, alpha = 0.05, pch = 19, size = 0.6) + 
+#   geom_line(aes(x = depth_cm, y = Estimate, color = rot_trt)) + 
+#   geom_ribbon(aes(x = depth_cm, ymin = Q2.5, ymax = Q97.5, fill = rot_trt, color = NULL), 
+#               alpha = 0.4) + 
+#   scale_color_manual(values = c(pnk1, dkbl1),
+#                      labels = c("Short", "Extended")) + 
+#   scale_fill_manual(values = c(pnk1, dkbl1),
+#                     labels = c("Short", "Extended")) + 
+#   scale_x_reverse() +
+#   labs(y = "Soil resistance (MPa)",
+#        x = "Soil depth (cm)",
+#        fill = "Rotation",
+#        color = "Rotation") +
+#   coord_flip() + 
+#   facet_grid(year_num ~ samp_nice) + 
+#   mt + 
+#   theme(legend.position = "bottom")
 
 
-ggsave("03_manu-figs/fig_penet.png", width = 5.52, height = 9.6)
+#ggsave("03_manu-figs/fig_penet.png", width = 5.52, height = 9.6)
 
 
 #--facet wrap
@@ -94,7 +94,7 @@ pd %>%
   mutate(cult_val = 15.24,
          mold_val = 22.86,
          cult_lab = ifelse(year_num == 2018 & samp_nice == "planting", "Cultivation at planting", NA),
-         mold_lab = ifelse(year_num == 2018 & samp_nice == "planting", "Moldboard previous fall,\ncomplex only", NA)) %>% 
+         mold_lab = ifelse(year_num == 2018 & samp_nice == "planting", "Moldboard previous fall,\nextended only", NA)) %>% 
   ggplot() + 
   geom_vline(aes(xintercept = cult_val), color = "gray80", size = 2) +
   geom_text(aes(x = 13, y = 5, label = cult_lab),
@@ -108,9 +108,9 @@ pd %>%
   geom_ribbon(aes(x = depth_cm, ymin = Q2.5, ymax = Q97.5, fill = rot_trt, color = NULL), 
               alpha = 0.4) + 
   scale_color_manual(values = c(pnk1, dkbl1),
-                     labels = c("Simple", "Complex")) + 
+                     labels = c("Short", "Extended")) + 
   scale_fill_manual(values = c(pnk1, dkbl1),
-                    labels = c("Simple", "Complex")) + 
+                    labels = c("Short", "Extended")) + 
   scale_x_reverse() +
   labs(y = "Soil resistance (MPa)",
        x = "Soil depth (cm)",
@@ -123,7 +123,7 @@ pd %>%
         strip.background = element_blank())
 
 
-ggsave("03_manu-figs/fig_penet.png", width = 5.9, height = 6.17)
+ggsave("03_manu-figs/s4_penet.png", width = 5.9, height = 6.17)
 
 
 # 2018 --------------------------------------------------------------------
@@ -136,7 +136,7 @@ f18a <-
     geom_text(aes(x = 13, y = 3, label = "Cultivation at planting"),
             fontface = "italic", check_overlap = T, hjust = 1) +
   geom_vline(xintercept = 22.86, color = "gray80", size = 2) +
-  geom_text(aes(x = 22.5, y = 3, label = "Moldboard previous fall,\ncomplex only"),
+  geom_text(aes(x = 22.5, y = 3, label = "Moldboard previous fall,\nExtended only"),
             fontface = "italic", check_overlap = T, hjust = 1) +
   geom_jitter(aes(x = depth_cm, y = resis_Mpa, color = rot_trt),
              alpha = 0.1, pch = 19, size = 0.6) + 
@@ -144,9 +144,9 @@ f18a <-
   geom_ribbon(aes(x = depth_cm, ymin = Q2.5, ymax = Q97.5, fill = rot_trt, color = NULL), 
               alpha = 0.4) + 
   scale_color_manual(values = c(pnk1, dkbl1),
-                    labels = c("Simple", "Complex")) + 
+                    labels = c("Short", "Extended")) + 
   scale_fill_manual(values = c(pnk1, dkbl1),
-                     labels = c("Simple", "Complex")) + 
+                     labels = c("Short", "Extended")) + 
   scale_x_reverse() +
   labs(y = NULL,
        x = "Soil depth (cm)",
@@ -167,7 +167,7 @@ f18b <-
   geom_text(aes(x = 13, y = 3, label = "Cultivation at planting"),
             fontface = "italic", check_overlap = T, hjust = 1) +
   geom_vline(xintercept = 22.86, color = "gray80", size = 2) +
-  geom_text(aes(x = 22.5, y = 3, label = "Moldboard previous fall,\ncomplex only"),
+  geom_text(aes(x = 22.5, y = 3, label = "Moldboard previous fall,\nExtended only"),
             fontface = "italic", check_overlap = T, hjust = 1) +
   geom_jitter(aes(x = depth_cm, y = resis_Mpa, color = rot_trt),
               alpha = 0.1, pch = 19, size = 0.6) + 
@@ -175,9 +175,9 @@ f18b <-
   geom_ribbon(aes(x = depth_cm, ymin = Q2.5, ymax = Q97.5, fill = rot_trt, color = NULL), 
               alpha = 0.4) + 
   scale_color_manual(values = c(pnk1, dkbl1),
-                     labels = c("Simple", "Complex")) + 
+                     labels = c("Short", "Extended")) + 
   scale_fill_manual(values = c(pnk1, dkbl1),
-                    labels = c("Simple", "Complex")) + 
+                    labels = c("Short", "Extended")) + 
   scale_x_reverse() +
   labs(y = "Penetration resistance (Mpa)",
        x = "Soil depth (cm)",
@@ -196,7 +196,7 @@ pd %>%
   geom_text(aes(x = 13, y = 3, label = "Cultivation at planting"),
             fontface = "italic", check_overlap = T, hjust = 1) +
   geom_vline(xintercept = 22.86, color = "gray80", size = 2) +
-  geom_text(aes(x = 22.5, y = 3, label = "Moldboard previous fall,\ncomplex only"),
+  geom_text(aes(x = 22.5, y = 3, label = "Moldboard previous fall,\nExtended only"),
             fontface = "italic", check_overlap = T, hjust = 1) +
   geom_jitter(aes(x = depth_cm, y = resis_Mpa, color = rot_trt),
               alpha = 0.1, pch = 19, size = 0.6) + 
@@ -204,9 +204,9 @@ pd %>%
   geom_ribbon(aes(x = depth_cm, ymin = Q2.5, ymax = Q97.5, fill = rot_trt, color = NULL), 
               alpha = 0.4) + 
   scale_color_manual(values = c(pnk1, dkbl1),
-                     labels = c("Simple", "Complex")) + 
+                     labels = c("Short", "Extended")) + 
   scale_fill_manual(values = c(pnk1, dkbl1),
-                    labels = c("Simple", "Complex")) + 
+                    labels = c("Short", "Extended")) + 
   scale_x_reverse() +
   labs(y = "Penetration resistance (Mpa)",
        x = "Soil depth (cm)",
@@ -225,7 +225,7 @@ pd %>%
   geom_text(aes(x = 13, y = 3, label = "Cultivation at planting"),
             fontface = "italic", check_overlap = T, hjust = 1) +
   geom_vline(xintercept = 22.86, color = "gray80", size = 2) +
-  geom_text(aes(x = 22.5, y = 3, label = "Moldboard previous fall,\ncomplex only"),
+  geom_text(aes(x = 22.5, y = 3, label = "Moldboard previous fall,\nExtended only"),
             fontface = "italic", check_overlap = T, hjust = 1) +
   geom_jitter(aes(x = depth_cm, y = resis_Mpa, color = rot_trt),
               alpha = 0.1, pch = 19, size = 0.6) + 
@@ -233,9 +233,9 @@ pd %>%
   geom_ribbon(aes(x = depth_cm, ymin = Q2.5, ymax = Q97.5, fill = rot_trt, color = NULL), 
               alpha = 0.4) + 
   scale_color_manual(values = c(pnk1, dkbl1),
-                     labels = c("Simple", "Complex")) + 
+                     labels = c("Short", "Extended")) + 
   scale_fill_manual(values = c(pnk1, dkbl1),
-                    labels = c("Simple", "Complex")) + 
+                    labels = c("Short", "Extended")) + 
   scale_x_reverse() +
   labs(y = "Penetration resistance (Mpa)",
        x = "Soil depth (cm)",

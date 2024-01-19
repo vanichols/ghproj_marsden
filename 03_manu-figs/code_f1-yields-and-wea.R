@@ -54,22 +54,23 @@ fig_ylds <-
   scale_x_continuous(breaks = c(seq(from = 2013, to = 2020, by = 1)),
                      ) +
   scale_color_manual(values = c(pnk1, dkbl1),
-                     labels = c("Short 2-year", "Extended 4-year")) + 
+                     labels = c("Short rotation", "Extended rotation")) + 
   scale_fill_manual(values = c(pnk1, dkbl1),
-                    labels = c("Short 2-year", "Extended 4-year")) + 
+                    labels = c("Short rotation", "Extended rotation")) + 
   scale_linetype_manual(values = c("dashed", "solid"),
-                        labels = c("Short 2-year", "Extended 4-year")) + 
+                        labels = c("Short rotation", "Extended rotation")) + 
   scale_shape_manual(values = c(22, 24),
-                     labels = c("Short 2-year", "Extended 4-year")) +
+                     labels = c("Short rotation", "Extended rotation")) +
   labs(x = "Year",
        y = mghalab,
-       fill = "Rotation",
-       color = "Rotation",
-       shape = "Rotation",
-       linetype = "Rotation") + 
+       fill = NULL,
+       color = NULL,
+       shape = NULL,
+       linetype = NULL) + 
   theme(legend.position = "top",
         legend.direction = "vertical",
         legend.background = element_rect(color = "black"),
+        legend.key.width=unit(2.5,"cm"), #--to make sure dashed line shows up
         legend.title.align = 0.5,
         legend.text = element_text(size = rel(1)),
         legend.title = element_text(size = rel(1)),
@@ -207,4 +208,4 @@ library(patchwork)
 set.seed(19)
 fig_ylds + fig_wea + plot_layout(widths = c(1.5, 1))
 
-ggsave("03_manu-figs/fig_yields-wea-gs.png", width = 9.15, height = 4.9)
+ggsave("03_manu-figs/f1_yields-wea-gs.png", width = 9.15, height = 4.9)
