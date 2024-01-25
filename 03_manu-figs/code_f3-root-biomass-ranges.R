@@ -173,7 +173,7 @@ f1
 f2 <- 
   te_all %>%
   filter(depthF == "Total (0-60 cm)") %>%
-  mutate(rot_trt = ifelse(rot_trt == "Simple", "Short\nrotation", "Extended\nrotation"),
+  mutate(rot_trt = ifelse(rot_trt == "Short rotation", "Short\nrotation", "Extended\nrotation"),
          rot_trt = fct_inorder(rot_trt)) %>% 
   ggplot(aes(x = rot_trt, color = rot_trt)) +
   # geom_point(aes(y = roots_min), pch = 16,

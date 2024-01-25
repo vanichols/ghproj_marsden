@@ -187,13 +187,13 @@ ggplot() +
   theme(#legend.position = "top",
     #legend.direction = "horizontal",
     axis.title = element_text(size = rel(1.2)),
-    legend.position = c(0.15, 0.15),
+    legend.position = c(0.17, 0.15),
     legend.background = element_rect(fill = "transparent"),
     #legend.background = element_rect(color = "black"),
-    legend.key.width=unit(2,"cm"), #--to make sure dashed line shows up
+    legend.key.width=unit(1.75,"cm"), #--to make sure dashed line shows up
     legend.title.align = 0.5,
     legend.text = element_text(size = rel(1)),
     legend.title = element_text(size = rel(1)))
 
 
-ggsave("03_manu-figs/f2_rootdepth-by-year-fitted-phen.png", width = 7)
+ggsave("03_manu-figs/f2_rootdepth-by-year-fitted-phen.png", width = 6.93, height = 4.12)

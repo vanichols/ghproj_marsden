@@ -4,6 +4,7 @@
 #        matt said try doing top layers, or doing it by layer
 # updated: 7/31/2023, doing back of the envelope calcs
 #          1/16/2024, does combining all of the data simplify the story at all?
+#          1/24/2024, get background root material values
 
 
 rm(list=ls())
@@ -49,6 +50,30 @@ sn <-
   unique() %>% 
   group_by(year) %>% 
   mutate(sampling_nu = 1:n())
+
+
+# background roots summary stats ------------------------------------------
+
+bkg_roots <- 
+  mrs_rootdist_ml %>% 
+  left_join(mrs_plotkey) %>%
+  left_join(sn) %>%
+  filter(sampling_nu == 1) %>% 
+  select(year, block, depth, roots_kgha, rot_trt) %>% 
+  distinct() %>% 
+  group_by(year, block, rot_trt) %>% 
+  summarise(roots_kgha = sum(roots_kgha)) 
+
+
+bkg_roots %>% 
+  group_by(rot_trt) %>% 
+  summarise(me = mean(roots_kgha),
+            sd = sd(roots_kgha),
+            n = n(),
+            se = sd/sqrt(n),
+            mx = max(roots_kgha),
+            mn = min(roots_kgha))
+
 
 
 mrs_rootdist_ml %>% 

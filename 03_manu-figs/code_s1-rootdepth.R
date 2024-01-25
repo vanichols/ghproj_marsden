@@ -82,7 +82,7 @@ fig_nosmooth <-
 
 fig_rawdata / fig_nosmooth
 
-ggsave("03_manu-figs/s1_root-data-and-non-smooth-fit.png")
+ggsave("03_manu-figs/s1_root-data-and-non-smooth-fit.png", width = 6.93, height = 7.2)
 
 
 

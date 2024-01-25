@@ -188,4 +188,4 @@ f_yc
 f_ylds / f_bm / f_gr / f_hi + f_yc + 
   plot_layout(guides = "collect") & theme(legend.position = "bottom")
 
-ggsave("03_manu-figs/s2_multi-panel.png")
+ggsave("03_manu-figs/s2_multi-panel.png", width = 6.93, height = 7.2)

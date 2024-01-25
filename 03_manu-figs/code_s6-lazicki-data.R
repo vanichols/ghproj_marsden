@@ -78,5 +78,5 @@ d %>%
        title = str_wrap("Maize grown in short rotation has higher root 
                         density in top 10 cm of soil and lower yields compared to extended rotation", width = 60))
 
-ggsave("03_manu-figs/s6_lazicki2016.png")
+ggsave("03_manu-figs/s6_lazicki2016.png",  width = 6.93, height = 4.12)
 

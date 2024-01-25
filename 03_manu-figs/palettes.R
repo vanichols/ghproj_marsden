@@ -1,13 +1,19 @@
 library(scales)
+library(colorblindcheck)
 
+# updated 1/24/24, the pnk1 was too dark/close to dark blue
 
 # pallet option1
 dkbl1 <- "#2d2d8a"
 grn1 <- "#00b050"
 ylw1 <- "#ffc000"
-pnk1 <- "#cc0099"
+pnk1 <- "#ff6ada"
+#pnk1 <- "#cc0099"
 dkpnk1 <- "#990073"
 ltbl1 <- "#daedef"
+
+show_col(colours = c(dkbl1, pnk1))
+palette_check(c(dkbl1, pnk1), plot = T)
 
 show_col(colours = c(dkbl1, grn1, ylw1, pnk1, ltbl1, dkpnk1))
 
