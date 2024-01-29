@@ -140,17 +140,17 @@ f_hi <-
   mutate(rot_trt = ifelse(rot_trt == "2y", "Short", "Extended"),
          rot_trt = as.factor(rot_trt),
          rot_trt = fct_rev(rot_trt)) %>% 
-  ggplot(aes(rot_trt, value, fill = rot_trt)) + 
-  stat_summary(geom = "bar", width = 0.5, color = "black") + 
+  ggplot(aes(rot_trt, value, color = rot_trt)) + 
+  stat_summary(geom = "point", pch = 17, size = 4) + 
   #stat_summary(geom = "linerange") +
   facet_grid(name ~ year, labeller = label_wrap_gen(width = 10)) + 
-  scale_fill_manual(values = c("Short" = pnk1,
+  scale_color_manual(values = c("Short" = pnk1,
                                "Extended" = dkbl1)) + 
   guides(color = F) + 
   labs(x = NULL,
        y = hilab,
-       fill = "Rotation") + 
-  scale_y_continuous(limits = c(0, 1)) +
+       color = "Rotation") + 
+#  scale_y_continuous(limits = c(0, 1)) +
   theme(axis.text.x = element_blank(),
         strip.text.x = element_blank(),
         legend.title = element_text(size = rel(1.2)),

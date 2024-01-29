@@ -25,6 +25,19 @@ mghalab <- (expression(atop("Maize dry grain yield", paste("(Mg "~ha^-1*")"))))
 
 dat <- mrs_cornylds %>% filter(year > 2012)
 
+myyields <- 
+  dat %>% 
+  left_join(mrs_plotkey) %>% 
+  group_by(rot_trt, year) %>% 
+  summarise(yield_Mgha = mean(yield_Mgha, na.rm = T)) %>% 
+  filter(rot_trt != "3y")
+
+#--how much higher is it?
+myyields %>% 
+  pivot_wider(names_from = rot_trt, values_from = yield_Mgha) %>% 
+  clean_names() %>% 
+  mutate(di = x4y - x2y)
+
 mystats <- 
   read_csv("01_yields/dat_ylds13-lmer-sig-year-as-fixed.csv") 
 
@@ -32,7 +45,14 @@ stars <-
   mystats %>% 
   select(y1, adj.p.value) %>% 
   filter(adj.p.value < 0.05) %>% 
-  mutate(year = as.numeric(str_remove(y1, "Y"))) 
+  mutate(year = as.numeric(str_remove(y1, "Y"))) %>% 
+  left_join(
+    myyields %>% 
+      filter(rot_trt == "4y") %>% 
+      select(-rot_trt, "max_yield" = yield_Mgha)
+  ) %>% 
+  select(-rot_trt)
+
 
 mybolds <- 
   mystats %>% 
@@ -42,38 +62,35 @@ mybolds <-
   pull(mybolds)
 
 fig_ylds <- 
-  dat %>% 
-  left_join(mrs_plotkey) %>% 
-  group_by(rot_trt, year) %>% 
-  summarise(yield_Mgha = mean(yield_Mgha, na.rm = T)) %>% 
-  filter(rot_trt != "3y") %>% 
+  myyields %>% 
   ggplot(aes(year, yield_Mgha)) + 
   geom_line(aes(color = rot_trt, linetype = rot_trt), size = 1.5) +
   geom_point(size = 4, aes(fill = rot_trt, pch = rot_trt)) +
-  geom_text(data = stars, aes(x = year, y = 7.5, label = "*"), size = 7) +
+  geom_text(data = stars, aes(x = year, y = max_yield + 0.5, label = "*"), size = 7) +
   scale_x_continuous(breaks = c(seq(from = 2013, to = 2020, by = 1)),
                      ) +
   scale_color_manual(values = c(pnk1, dkbl1),
-                     labels = c("Short rotation", "Extended rotation")) + 
+                     labels = c("Short (2-year)", "Extended (4-year)")) + 
   scale_fill_manual(values = c(pnk1, dkbl1),
-                    labels = c("Short rotation", "Extended rotation")) + 
+                    labels = c("Short (2-year)", "Extended (4-year)")) + 
   scale_linetype_manual(values = c("dashed", "solid"),
-                        labels = c("Short rotation", "Extended rotation")) + 
+                        labels = c("Short (2-year)", "Extended (4-year)")) + 
   scale_shape_manual(values = c(22, 24),
-                     labels = c("Short rotation", "Extended rotation")) +
+                     labels = c("Short (2-year)", "Extended (4-year)")) +
+  scale_y_continuous(limits = c(7, 13)) +
   labs(x = "Year",
        y = mghalab,
-       fill = NULL,
-       color = NULL,
-       shape = NULL,
-       linetype = NULL) + 
+       fill = "Rotation",
+       color = "Rotation",
+       shape = "Rotation",
+       linetype = "Rotation") + 
   theme(legend.position = "top",
         legend.direction = "vertical",
         legend.background = element_rect(color = "black"),
         legend.key.width=unit(2.5,"cm"), #--to make sure dashed line shows up
         legend.title.align = 0.5,
         legend.text = element_text(size = rel(1)),
-        legend.title = element_text(size = rel(1)),
+        legend.title = element_text(size = rel(1), face = "bold"),
         axis.text.x = element_text(face = mybolds))
 
 
@@ -193,7 +210,7 @@ fig_wea <-
         legend.direction = "vertical",
         legend.background = element_rect(color = "black"),
         legend.title.align = 0.5,
-        legend.title = element_text(size = rel(1)),
+        legend.title = element_text(size = rel(1), face = "bold"),
         legend.text = element_text(size = rel(1)),
         panel.grid = element_blank()) 
 
