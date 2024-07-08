@@ -199,7 +199,8 @@ fig_wea <-
                                "Yield data, growth analysis" = "gray70", 
                                "Yield data, growth analysis, root data" = "black")) +
                                 #ltbl1, bl2)) + 
-  guides(size = "none") +
+  guides(size = "none",
+         fill = guide_legend(override.aes = list(size=4))) +
   labs(size = expression("Yield advantage of Extended rotation ("~Mg~ha^-1*")"),
        #size = (expression(atop("Yield advantage\nof Extended rotation", paste("(Mg "~ha^-1*")")))),
        color = "Measurement set",
@@ -224,5 +225,6 @@ fig_wea
 library(patchwork)
 set.seed(19)
 fig_ylds + fig_wea + plot_layout(widths = c(1.5, 1))
+
 
 ggsave("03_manu-figs/f1_yields-wea-gs.png", width = 9.15, height = 4.9)

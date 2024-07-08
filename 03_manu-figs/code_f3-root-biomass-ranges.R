@@ -148,14 +148,14 @@ f1 <-
   # geom_point(aes(y = roots_min, color = rot_trt), pch = 16,
   #            position = position_dodge(width = 0.2),
   #            size = 3) +
-  geom_text(aes(x = 4.5, y = 101), color = "gray70", size = 2.5,
+  geom_text(aes(x = 4.5, y = 101), color = "gray50", size = 2.5,
             label = "No background\nroot decomposition", check_overlap = T, fontface = "italic") +
   geom_segment(aes(x = 4.25, y = 101, xend = 4.15, yend = 101), 
-               color = "gray", arrow = arrow(length = unit(0.1, "cm"), type = "closed")) +
-  geom_text(aes(x = 4.5, y = 320), color = "gray70", size = 2.5,
+               color = "gray50", arrow = arrow(length = unit(0.1, "cm"), type = "closed")) +
+  geom_text(aes(x = 4.5, y = 320), color = "gray50", size = 2.5,
             label = "100% background\nroot decomposition", check_overlap = T, fontface = "italic") +
   geom_segment(aes(x = 4.25, y = 320, xend = 4.15, yend = 320), 
-               color = "gray", arrow = arrow(length = unit(0.1, "cm"), type = "closed")) +
+               color = "gray50", arrow = arrow(length = unit(0.1, "cm"), type = "closed")) +
   scale_color_manual(values = c(pnk1, dkbl1),
                      labels = c("Short rotation", "Extended rotation")) + 
   guides(color = "none") +
@@ -205,65 +205,4 @@ f1 + f2 +
   # )
 
 ggsave("03_manu-figs/f3_rootmass-ranges.png", width = 6.93, height = 4.12)
-
-
-
-# exp with points, don't like ---------------------------------------------------------
-
-  
-te_avg %>%
-  mutate(depthF = fct_inorder(depth),
-         depthFr = fct_rev(depthF)) %>%
-  ggplot(aes(x = depthFr, color = rot_trt)) +
-  geom_point(aes(y = roots_min), pch = 16,
-             position = position_dodge(width = 0.2),
-             size = 3) +
-  geom_point(aes(y = roots_max), pch = 16,
-             position = position_dodge(width = 0.2),
-             size = 3) +
-  geom_linerange(
-    aes(ymin = roots_min, ymax = roots_max, color = rot_trt),
-    position = position_dodge(width = 0.2),
-    size = 3) +
-  scale_color_manual(values = c(pnk1, dkbl1),
-                     labels = c("Short rotation", "Extended rotation")) +
-  coord_flip() +
-  labs(x = "Soil depth range (cm)",
-       y = my_ylab,
-       color = "Rotation") +
-  my_th1
-
-  
-  
-#--old fig for example
-
-dat %>% 
-  bind_rows(dat_tot) %>% 
-  mutate(rot_trt = ifelse(rot_trt == "2y", "Short rotation", "Extended rotation"),
-         rot_trt = factor(rot_trt, levels = c("Short rotation", "Extended rotation")),
-         depth = fct_inorder(depth)) %>% 
-  ggplot(aes(rot_trt, mean)) + 
-  geom_col(aes(fill = rot_trt), color= "black") +
-  geom_linerange(aes(x = rot_trt, ymin = mean - se, 
-                     ymax = mean + se)) +
-  scale_color_manual(values = c(pnk1, dkbl1),
-                     labels = c("Short rotation", "Extended rotation")) + 
-  scale_fill_manual(values = c(pnk1, dkbl1),
-                    labels = c("Short rotation", "Extended rotation")) + 
-  guides(fill = F, color = F) +
-  labs(x = NULL,
-       y = my_ylab,
-       color = "Rotation",
-       fill = "Rotation") +
-  facet_grid(.~depth) + 
-  theme(panel.grid.major.x = element_blank(),
-        panel.grid.minor.x = element_blank(),
-        #axis.text.x = element_blank(), 
-        #axis.ticks.x = element_blank(),
-        legend.position = "top",
-        legend.background = element_rect(color = "black"),
-        legend.title = element_text(size = rel(1.1)),
-        legend.text = element_text(size = rel(1.1)),
-        strip.text = element_text(size = rel(1.1)),
-        strip.background = element_blank())
 
