@@ -90,9 +90,9 @@ fig_mois <-
   geom_vline(data = r3, aes(xintercept = day_r3), color = "black", linetype = "dotted") +
   geom_text(data = r3, aes(x = day_r3, y = 0.4, label = "Milk stage (R3)"),
             check_overlap = T, hjust = 0.5, fontface = "italic") +
-  scale_color_manual(values = c(pnk1, dkbl1),
+  scale_color_manual(values = c(ylw2, dkbl1),
                      labels = c("Short", "Extended")) + 
-  scale_fill_manual(values = c(pnk1, dkbl1),
+  scale_fill_manual(values = c(ylw2, dkbl1),
                     labels = c("Short", "Extended")) + 
   #  coord_cartesian(ylim = c(0.1, 0.45)) +
   scale_x_continuous(expand = expansion(add = c(15, 3))) +

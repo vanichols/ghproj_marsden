@@ -70,7 +70,7 @@ d %>%
   filter(date != "Summer") %>% 
   ggplot(aes(fct_rev(depth), lengthpcm3soil, fill = rot_trt)) + 
   geom_boxplot(size = 1) + 
-  scale_fill_manual(values = c(dkbl1, pnk1)) +
+  scale_fill_manual(values = c(dkbl1, ylw2)) +
   coord_flip() + 
   labs(x = "Soil Depth", y = "Length of root per cm3 soil",
        fill = "Rotation, maize yield",

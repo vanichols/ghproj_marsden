@@ -27,7 +27,7 @@ dat <- mrs_cornylds %>% filter(year > 2012)
 
 myyields <- 
   dat %>% 
-  left_join(mrs_plotkey) %>% 
+  left_join(mrs_plotkey, relationship = "many-to-many") %>% 
   group_by(rot_trt, year) %>% 
   summarise(yield_Mgha = mean(yield_Mgha, na.rm = T)) %>% 
   filter(rot_trt != "3y")
@@ -69,9 +69,9 @@ fig_ylds <-
   geom_text(data = stars, aes(x = year, y = max_yield + 0.5, label = "*"), size = 7) +
   scale_x_continuous(breaks = c(seq(from = 2013, to = 2020, by = 1)),
                      ) +
-  scale_color_manual(values = c(pnk1, dkbl1),
+  scale_color_manual(values = c(ylw2, dkbl1),
                      labels = c("Short (2-year)", "Extended (4-year)")) + 
-  scale_fill_manual(values = c(pnk1, dkbl1),
+  scale_fill_manual(values = c(ylw2, dkbl1),
                     labels = c("Short (2-year)", "Extended (4-year)")) + 
   scale_linetype_manual(values = c("dashed", "solid"),
                         labels = c("Short (2-year)", "Extended (4-year)")) + 

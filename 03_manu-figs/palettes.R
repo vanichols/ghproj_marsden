@@ -1,5 +1,5 @@
 library(scales)
-library(colorblindcheck)
+#library(colorblindcheck)
 
 # updated 1/24/24, the pnk1 was too dark/close to dark blue
 
@@ -13,7 +13,7 @@ dkpnk1 <- "#990073"
 ltbl1 <- "#daedef"
 
 show_col(colours = c(dkbl1, pnk1))
-palette_check(c(dkbl1, pnk1), plot = T)
+#palette_check(c(dkbl1, pnk1), plot = T)
 
 show_col(colours = c(dkbl1, grn1, ylw1, pnk1, ltbl1, dkpnk1))
 

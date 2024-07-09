@@ -146,7 +146,7 @@ gaps_filt %>%
   scale_fill_manual(values = c(ylw1, dkpr2)) +
   labs(#title = "Ames",
     x = "Year",
-    y = (expression(atop("Impact on maize yield", paste("(kg "~ha^-1*")")))),
+    y = (expression(atop("Increase in maize yield", paste("(kg "~ha^-1*")")))),
     color = NULL,
     fill = NULL,
     caption = "RFV = Root front velocity",

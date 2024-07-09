@@ -122,7 +122,7 @@ rs_ratio %>%
          roots_added_kgha = ifelse(roots_added_kgha == "roots_max", "100%", "0%")) %>% 
   ggplot(aes(as.factor(yearF), rs_ratio, color = rot_trt)) + 
   geom_jitter(aes(shape = roots_added_kgha), size = 3, width = 0.2) + 
-  scale_color_manual(values = c(pnk1, dkbl1)) + 
+  scale_color_manual(values = c(ylw2, dkbl1)) + 
   facet_grid(.~yearF, scales = "free") + 
   labs(x = NULL,
        y = "Root to shoot mass ratio",

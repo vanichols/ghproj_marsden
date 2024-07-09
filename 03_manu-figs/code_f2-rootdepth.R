@@ -75,9 +75,9 @@ fig_dat %>%
   ggplot(aes(date, rootdepth_cm)) + 
   geom_line(aes(color = rot_trt, linetype = rot_trt), size = 1.5) +
   geom_point(size = 4, aes(fill = rot_trt, pch = rot_trt)) +
-  scale_color_manual(values = c(pnk1, dkbl1),
+  scale_color_manual(values = c(ylw2, dkbl1),
                      labels = c("Short 2-year", "Extended 4-year")) + 
-  scale_fill_manual(values = c(pnk1, dkbl1),
+  scale_fill_manual(values = c(ylw2, dkbl1),
                     labels = c("Short 2-year", "Extended 4-year")) + 
   scale_linetype_manual(values = c("dashed", "solid"),
                         labels = c("Short 2-year", "Extended 4-year")) + 
@@ -163,9 +163,9 @@ ggplot() +
   facet_grid(.~ year, scales = "free") +
   scale_linetype_manual(values = c("dashed", "solid"),
                      labels = c("Short rotation", "Extended rotation")) + 
-  scale_color_manual(values = c(pnk1, dkbl1),
+  scale_color_manual(values = c(ylw2, dkbl1),
                      labels = c("Short rotation", "Extended rotation")) +
-  scale_fill_manual(values = c(pnk1, dkbl1),
+  scale_fill_manual(values = c(ylw2, dkbl1),
                     labels = c("Short rotation", "Extended rotation")) +
   # scale_linetype_manual(values = c("solid", "solid"),
   #                       labels = c("Short 2-year", "Extended 4-year")) + 

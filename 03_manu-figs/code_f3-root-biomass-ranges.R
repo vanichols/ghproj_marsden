@@ -114,9 +114,9 @@ te_all %>%
   geom_linerange(aes(ymin = roots_min, ymax = roots_max, color = rot_trt), 
                  position = position_dodge(width = 0.2), 
                  size = 3) + 
-  scale_color_manual(values = c(pnk1, dkbl1),
+  scale_color_manual(values = c(ylw2, dkbl1),
                      labels = c("Short rotation", "Extended rotation")) + 
-  scale_fill_manual(values = c(pnk1, dkbl1),
+  scale_fill_manual(values = c(ylw2, dkbl1),
                     labels = c("Short rotation", "Extended rotation")) + 
   guides(fill = F, color = F) +
   labs(x = NULL,
@@ -156,7 +156,7 @@ f1 <-
             label = "100% background\nroot decomposition", check_overlap = T, fontface = "italic") +
   geom_segment(aes(x = 4.25, y = 320, xend = 4.15, yend = 320), 
                color = "gray50", arrow = arrow(length = unit(0.1, "cm"), type = "closed")) +
-  scale_color_manual(values = c(pnk1, dkbl1),
+  scale_color_manual(values = c(ylw2, dkbl1),
                      labels = c("Short rotation", "Extended rotation")) + 
   guides(color = "none") +
   expand_limits(x = c(1, 5)) +
@@ -186,7 +186,7 @@ f2 <-
                      color = rot_trt), 
                  position = position_dodge(width = 0.2), 
                  size = 4) + 
-  scale_color_manual(values = c(pnk1, dkbl1),
+  scale_color_manual(values = c(ylw2, dkbl1),
                      labels = c("Short rotation", "Extended rotation")) + 
   guides(fill = "none", color = "none") +
   labs(x = NULL,
