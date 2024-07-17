@@ -162,17 +162,17 @@ ggplot() +
     color = "gray50") +
   facet_grid(.~ year, scales = "free") +
   scale_linetype_manual(values = c("dashed", "solid"),
-                     labels = c("Short rotation", "Extended rotation")) + 
+                     labels = c("Short (2-year) rotation", "Extended (4-year) rotation")) + 
   scale_color_manual(values = c(ylw2, dkbl1),
-                     labels = c("Short rotation", "Extended rotation")) +
+                     labels = c("Short (2-year) rotation", "Extended (4-year) rotation")) + 
   scale_fill_manual(values = c(ylw2, dkbl1),
-                    labels = c("Short rotation", "Extended rotation")) +
+                    labels = c("Short (2-year) rotation", "Extended (4-year) rotation")) + 
   # scale_linetype_manual(values = c("solid", "solid"),
   #                       labels = c("Short 2-year", "Extended 4-year")) + 
   scale_size_manual(values = c(1, 1.5),
-                    labels = c("Short rotation", "Extended rotation")) +
+                    labels = c("Short (2-year) rotation", "Extended (4-year) rotation")) + 
   scale_shape_manual(values = c(22, 24),
-                     labels = c("Short rotation", "Extended rotation")) +
+                     labels = c("Short (2-year) rotation", "Extended (4-year) rotation")) + 
   myth +
   scale_y_reverse() +
   labs(x = "\nCumulative growing degree days (base 10 deg C)",
@@ -187,8 +187,9 @@ ggplot() +
   theme(#legend.position = "top",
     #legend.direction = "horizontal",
     axis.title = element_text(size = rel(1.2)),
-    legend.position = c(0.17, 0.15),
+    legend.position = c(0.22, 0.15),
     legend.background = element_rect(fill = "transparent"),
+    legend.key = element_rect(fill = NA),
     #legend.background = element_rect(color = "black"),
     legend.key.width=unit(1.75,"cm"), #--to make sure dashed line shows up
     legend.title.align = 0.5,
@@ -196,4 +197,5 @@ ggplot() +
     legend.title = element_text(size = rel(1)))
 
 
-ggsave("03_manu-figs/f2_rootdepth-by-year-fitted-phen.png", width = 6.93, height = 4.12)
+#ggsave("03_manu-figs/f2_rootdepth-by-year-fitted-phen.png", width = 6.93, height = 4.12)
+ggsave("03_manu-figs/f2_rootdepth-by-year-fitted-phen.png", width = 8, height = 6)

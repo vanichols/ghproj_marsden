@@ -70,11 +70,11 @@ f_ylds <-
   geom_segment(aes(x = thing, xend = thing,
                    y = x2y, yend = x4y)) +
   geom_point(aes(thing, x4y), color = dkbl1, size = 3) + 
-  geom_point(aes(thing, x2y), color = rd2, size = 3) +
+  geom_point(aes(thing, x2y), color = ylw2, size = 3) +
   facet_grid(name ~ year, labeller = label_wrap_gen(width = 15)) + 
-  scale_fill_manual(values = c(rd2, dkbl1),
+  scale_fill_manual(values = c(ylw2, dkbl1),
                     labels = c("Short", "Extended")) + 
-  scale_color_manual(values = c(rd2, dkbl1)) + 
+  scale_color_manual(values = c(ylw2, dkbl1)) + 
   #  scale_y_continuous(limits = c(0, 16)) +
   scale_y_continuous(expand = expansion(add = 0.5)) +
   labs(x = NULL,
@@ -82,9 +82,9 @@ f_ylds <-
        fill = "Rotation") +
   theme(axis.text.x = element_blank(), 
         axis.ticks.x = element_blank(),
-        legend.position = "bottom",
-        legend.background = element_rect(color = "black")) + 
-  guides(color = "none") 
+        #legend.position = "top",
+        legend.background = element_rect(color = "black")) #+ 
+  #guides(color = "none") 
 
 
 f_ylds
@@ -99,15 +99,17 @@ bmlab <- (expression(atop("grams", paste(plant^-1))))
 f_bm <- 
   gr %>%
   filter(name == "Plant biomass") %>% 
+  mutate(rot_trt = ifelse(rot_trt == "2y", "Short (2-year) rotation", "Extended (4-year) rotation")) %>% 
   ggplot(aes(doy, value, color = rot_trt)) + 
   geom_line() +
   facet_grid(name ~ year, labeller = label_wrap_gen(width = 10)) + 
-  scale_color_manual(values = c(rd2, dkbl1)) +
+  scale_color_manual(values = c(ylw2, dkbl1)) +
   labs(x = NULL,
-       y = bmlab) +
+       y = bmlab, 
+       color = NULL) +
   theme(strip.text.x = element_blank(),
-        axis.text.x = element_blank())+ 
-  guides(fill = F, color = F)
+        axis.text.x = element_blank())#+ 
+  #guides(fill = F, color = F)
 
 f_bm
 
@@ -122,7 +124,7 @@ f_gr <-
   ggplot(aes(doy, value, color = rot_trt)) + 
   geom_line() +
   facet_grid(name ~ year, labeller = label_wrap_gen(width = 10)) + 
-  scale_color_manual(values = c(rd2, dkbl1)) +
+  scale_color_manual(values = c(ylw2, dkbl1)) +
   labs(x = "Day of year", 
        y = grlab) +
   theme(strip.text.x = element_blank()) + 
@@ -144,7 +146,7 @@ f_hi <-
   stat_summary(geom = "point", pch = 17, size = 4) + 
   #stat_summary(geom = "linerange") +
   facet_grid(name ~ year, labeller = label_wrap_gen(width = 10)) + 
-  scale_color_manual(values = c("Short" = rd2,
+  scale_color_manual(values = c("Short" = ylw2,
                                "Extended" = dkbl1)) + 
   guides(color = F) + 
   labs(x = NULL,
@@ -172,7 +174,7 @@ f_yc <-
   ggplot(aes(rot_trt, value, color = rot_trt)) + 
   stat_summary(geom = "point", pch = 15, size = 4) + 
   facet_grid(name ~ year, labeller = label_wrap_gen(width = 15)) + 
-  scale_color_manual(values = c(rd2, dkbl1)) + 
+  scale_color_manual(values = c(ylw2, dkbl1)) + 
   scale_y_continuous(limits = c(140, 200)) +
   labs(x = NULL,
        y = "grams") +
@@ -186,6 +188,6 @@ f_yc
 # patchwork... ------------------------------------------------------------
 
 f_ylds / f_bm / f_gr / f_hi + f_yc + 
-  plot_layout(guides = "collect") & theme(legend.position = "bottom")
+  plot_layout(guides = "collect") & theme(legend.position = "top")
 
 ggsave("03_manu-figs/s2_multi-panel.png", width = 6.93, height = 7.2)
