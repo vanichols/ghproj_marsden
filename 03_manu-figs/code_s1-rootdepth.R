@@ -66,11 +66,11 @@ fig_nosmooth <-
   ggplot(aes(x = cum_gdd, y = rootdepth_cm, color = rotation)) + 
   facet_wrap(~ year.f) + 
   geom_point() + 
-  geom_line(aes(y = prd1), size = 3) + 
+  geom_line(aes(y = prd1), size = 1) + 
   geom_ribbon(aes(ymin = lwr1, ymax = upr1, fill = rotation), alpha = 0.2) + 
-  scale_fill_manual(values = c(dkbl1, pnk1)) +
+  scale_fill_manual(values = c(dkbl1, ylw1)) +
   scale_color_manual(values = c(dkbl1,
-                                pnk1)) + 
+                                ylw1)) + 
   labs(x = "Cumulative GDDs",
        y = "Rooting depth (cm)",
        title = "Non-linear fits without smoothing")
